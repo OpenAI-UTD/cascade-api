@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import shutil
 from pathlib import Path
 from typing import Any
 
@@ -43,6 +44,7 @@ class RepoQaWorkflow:
         verification: dict[str, Any] | None = None
         if fix_mode == "apply" and initial.get("proposed_changes"):
             applied = apply_proposed_changes(checkout.root, initial["proposed_changes"])
+            _invalidate_bytecode_caches(checkout.root)
             verify_specs = [command for command in plan.commands if command.phase not in {"setup", "install"}]
             verification_commands = execute_commands(self.executor, verify_specs, checkout.root)
             refreshed_sources = load_source_files(checkout.root, [source["path"] for source in plan.source_files])
@@ -78,6 +80,19 @@ class RepoQaWorkflow:
             passed=bool((final_evaluation.get("quality_gate") or {}).get("passed")),
             workspace=str(checkout.root),
         )
+
+
+def _invalidate_bytecode_caches(root: Path) -> None:
+    # Verification reruns the project's commands after apply_proposed_changes rewrites
+    # source files. On filesystems with coarse (1s) mtime resolution the fix write can
+    # land within the same second as the initial compile step; Python's pyc cache then
+    # matches the source header and imports return the pre-fix values. Removing every
+    # __pycache__/ inside the checkout forces the next compile step to regenerate bytecode
+    # from the updated source.
+    root = root.resolve()
+    for cache_dir in root.rglob("__pycache__"):
+        if cache_dir.is_dir() and root in cache_dir.resolve().parents:
+            shutil.rmtree(cache_dir, ignore_errors=True)
 
 
 def apply_proposed_changes(root: Path, proposals: list[dict[str, Any]]) -> list[dict[str, Any]]:

@@ -26,7 +26,7 @@ function Test-DynamicCodeValue {
     param([string]$Line, [string]$Value)
     $trimmed = $Value.Trim().Trim('"', "'", '`')
     if ($Line -match '\$\{') { return $true }
-    if ($trimmed -match '^(settings|self|payload|request|headers|metadata|approval|auth|token|key|digest|configured|configured_plain|configured_hashes|configuredApiToken|import\.meta|os\.getenv|_split|hashlib|hmac|json|base64|str|bool|int|len|any|all|dict|list|set|Path)\b') { return $true }
+    if ($trimmed -match '^(settings|self|payload|request|headers|metadata|approval|auth|token|key|digest|configured|configured_plain|configured_hashes|configuredApiToken|import\.meta|os\.getenv|_split|hashlib|hmac|json|base64|str|bool|int|len|any|all|dict|list|set|Path|api_key|api_url|access_token|refresh_token|id_token|client_secret|private_key)\b') { return $true }
     if ($trimmed -match '^[A-Za-z_][A-Za-z0-9_]*\(') { return $true }
     if ($trimmed -match '^[frbuFRBU]*["'']') { return $true }
     if ($Line -match '(?i)\b(api_keys|api_key_hashes|auth_header|signing_secret)\s*=\s*settings\.') { return $true }
