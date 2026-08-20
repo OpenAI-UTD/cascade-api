@@ -80,6 +80,11 @@ htmlcov/
 .venv/
 venv/
 env/
+.cascade-venv/
+.cascade-cache/
+.cascade-home/
+.pytest-tmp/
+repo-qa-result.json
 ENV/
 pip-wheel-metadata/
 *.egg-info/

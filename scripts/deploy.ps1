@@ -57,7 +57,8 @@ function Invoke-HttpText {
 }
 function Write-CommandCenterDebug {
     Write-Section "Command Center UI Failure Debug"
-    kubectl -n $Namespace get deploy,svc,endpoints,pods | Select-String command-center
+    kubectl -n $Namespace get deploy,svc,endpoints,pods | Select-String "command-center|project-qa-service"
+    kubectl -n $Namespace describe deployment project-qa-service
     kubectl -n $Namespace describe deployment command-center-api
     kubectl -n $Namespace describe deployment command-center
     kubectl -n $Namespace logs deployment/command-center-api --tail=100
@@ -67,9 +68,12 @@ function Write-CommandCenterDebug {
 try {
     Write-Section "Deploy Cascade Command Center UI"
     foreach ($path in @(
+        "services/project-qa-service/Dockerfile",
         "services/command-center-api/Dockerfile",
         "web/command-center/Dockerfile",
         "web/command-center/package.json",
+        "infra/kubernetes/project-qa-service/deployment.yaml",
+        "infra/kubernetes/project-qa-service/service.yaml",
         "infra/kubernetes/command-center-api/deployment.yaml",
         "infra/kubernetes/command-center-api/service.yaml",
         "infra/kubernetes/command-center/deployment.yaml",
@@ -106,6 +110,7 @@ try {
 
     Write-Section "Build Command Center UI Images"
     foreach ($image in @(
+        @{ Name = "cascade-project-qa-service:dev"; Dockerfile = "services/project-qa-service/Dockerfile" },
         @{ Name = "cascade-command-center-api:dev"; Dockerfile = "services/command-center-api/Dockerfile" },
         @{ Name = "cascade-command-center:dev"; Dockerfile = "web/command-center/Dockerfile" }
     )) {
@@ -113,33 +118,40 @@ try {
     }
 
     Write-Section "Load Command Center UI Images Into kind"
-    foreach ($imageName in @("cascade-command-center-api:dev", "cascade-command-center:dev")) {
+    foreach ($imageName in @("cascade-project-qa-service:dev", "cascade-command-center-api:dev", "cascade-command-center:dev")) {
         Invoke-Checked "kind load $imageName" { kind load docker-image $imageName --name $ClusterName }
     }
 
     Write-Section "Apply Command Center UI Manifests"
-    foreach ($path in @("infra/kubernetes/command-center-api", "infra/kubernetes/command-center")) {
+    foreach ($path in @("infra/kubernetes/project-qa-service", "infra/kubernetes/command-center-api", "infra/kubernetes/command-center")) {
         $manifests = @(Get-ChildItem -Path $path -Filter "*.yaml")
         if ($manifests.Count -eq 0) { throw "No Kubernetes manifests found in $path" }
         Invoke-Checked "Apply $path" { kubectl apply -f $path }
     }
 
-    foreach ($deployment in @("command-center-api", "command-center")) {
+    foreach ($deployment in @("project-qa-service", "command-center-api", "command-center")) {
         Invoke-Checked "Restart $deployment" { kubectl -n $Namespace rollout restart "deployment/$deployment" }
     }
 
     Write-Section "Wait For Command Center UI Rollouts"
-    foreach ($deployment in @("command-center-api", "command-center")) {
+    foreach ($deployment in @("project-qa-service", "command-center-api", "command-center")) {
         Invoke-Checked "Wait for $deployment rollout" { kubectl -n $Namespace rollout status "deployment/$deployment" --timeout=240s }
     }
 
     Write-Section "Wait For Service Endpoints"
-    foreach ($service in @("command-center-api", "command-center")) {
+    foreach ($service in @("project-qa-service", "command-center-api", "command-center")) {
         Test-EndpointReady $service
         Write-Host "PASS: svc/$service has endpoints"
     }
 
     Write-Section "Smoke Test Command Center UI Services"
+    $qaPort = Get-FreePort
+    Start-PortForward "project-qa-service" $qaPort 8040 | Out-Null
+    $qaHealth = Invoke-HttpJson "http://localhost:$qaPort/health"
+    if ($qaHealth.status -ne "ok") { throw "project-qa-service /health returned unexpected payload" }
+    Write-Host "PASS: project-qa-service /health"
+    Stop-PortForwards
+
     $apiPort = Get-FreePort
     Start-PortForward "command-center-api" $apiPort 8031 | Out-Null
     $apiHealth = Invoke-HttpJson "http://localhost:$apiPort/health"

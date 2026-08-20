@@ -125,6 +125,7 @@ try {
             docker build -f services/retrieval-service/Dockerfile -t cascade-ci/retrieval-service:test .
             docker build -f services/agent-orchestrator-service/Dockerfile -t cascade-ci/agent-orchestrator-service:test .
             docker build -f services/remediation-recommender-service/Dockerfile -t cascade-ci/remediation-recommender-service:test .
+            docker build -f services/project-qa-service/Dockerfile -t cascade-ci/project-qa-service:test .
         }
     } else {
         $Results.Add([pscustomobject]@{ Step = "Docker build smoke"; Status = "SKIP"; ExitCode = 0; Seconds = 0 }) | Out-Null

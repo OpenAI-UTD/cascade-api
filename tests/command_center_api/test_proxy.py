@@ -58,6 +58,7 @@ def test_real_remediation_execution_blocked_by_default() -> None:
         ("/api/chaos/planner/campaigns/camp-1/stop", {}),
         ("/api/chaos/executor/runs", {"dry_run": True, "approved": False}),
         ("/api/agent/investigations", {}),
+        ("/api/qa/evaluations", {"project": {"project_id": "app", "name": "App"}, "checks": [{"name": "tests", "status": "passed"}]}),
         ("/api/topology/topology/impact", {"root_service": "catalogue"}),
         ("/api/topology/topology/blast-radius", {"root_service": "catalogue"}),
         ("/api/topology/topology/critical-paths", {"root_service": "catalogue"}),

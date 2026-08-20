@@ -2,9 +2,9 @@ name: Cascade CI
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, dev]
   push:
-    branches: [main]
+    branches: [main, dev]
   workflow_dispatch:
 
 concurrency:
@@ -32,7 +32,11 @@ jobs:
             "scripts/accept-all.ps1",
             "scripts/audit-secrets.ps1",
             "web/command-center/package.json",
-            "services/command-center-api/app/main.py"
+            "services/command-center-api/app/main.py",
+            "services/project-qa-service/app/main.py",
+            "services/repo-qa-runner/app/main.py",
+            "docs/repo-qa-runner.md",
+            "docs/project-qa-api.md"
           )
           $missing = @($required | Where-Object { -not (Test-Path $_) })
           if ($missing.Count -gt 0) {
@@ -77,7 +81,7 @@ jobs:
         run: |
           set -euo pipefail
           python -m pip install --upgrade pip
-          python -m pip install pytest ruff
+          python -m pip install pytest ruff==0.9.10
           while IFS= read -r req; do
             echo "Installing $req"
             python -m pip install -r "$req"
@@ -143,6 +147,77 @@ jobs:
             }
           }
 
+  project-qa-contract:
+    name: Project QA API and CI contract
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install Project QA API
+        run: python -m pip install -r services/project-qa-service/requirements.txt
+
+      - name: Start Project QA API
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m uvicorn --app-dir services/project-qa-service app.main:app --host 127.0.0.1 --port 8040 >project-qa-api.log 2>&1 &
+          for attempt in $(seq 1 20); do
+            if curl --fail --silent http://127.0.0.1:8040/ready >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat project-qa-api.log
+          exit 1
+
+      - name: Submit CI and runtime evidence
+        shell: pwsh
+        run: |
+          ./scripts/invoke-project-qa.ps1 `
+            -PayloadPath examples/project-qa-evaluation.json `
+            -ApiUrl http://127.0.0.1:8040 `
+            -ResultPath project-qa-result.json
+
+          $result = Get-Content project-qa-result.json -Raw | ConvertFrom-Json
+          if ($result.status -ne "fixes_proposed") { throw "Expected fixes_proposed, got $($result.status)" }
+          if ($result.stats.findings -ne 2) { throw "Expected two findings" }
+          if ($result.stats.proposed_changes -ne 1) { throw "Expected one documented change proposal" }
+          if ($result.quality_gate.passed) { throw "Expected the sample high-severity quality gate to fail" }
+
+      - name: Run isolated repository QA and verify documented fix
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp -R examples/repo-qa-fixture runner-fixture
+          git -C runner-fixture init
+          git -C runner-fixture add .
+          git -C runner-fixture -c user.name="Cascade CI" -c user.email="cascade@example.invalid" commit -m fixture
+          mkdir runner-workspaces
+          python services/repo-qa-runner/app/main.py runner-fixture \
+            --api-url http://127.0.0.1:8040 \
+            --workspace-root runner-workspaces \
+            --allow-project-commands \
+            --pull-images \
+            --fix-mode apply \
+            --result repo-qa-result.json
+
+      - name: Validate repository QA verification report
+        shell: pwsh
+        run: |
+          $result = Get-Content repo-qa-result.json -Raw | ConvertFrom-Json
+          if ($result.initial_evaluation.status -ne "fixes_proposed") { throw "Expected initial fixes_proposed status" }
+          if ($result.verification_evaluation.status -ne "passed") { throw "Expected passing verification evaluation" }
+          if ($result.applied_changes.Count -ne 1) { throw "Expected one applied change" }
+          if (-not $result.passed) { throw "Expected final quality gate to pass" }
+          if ($result.diff -notmatch "RETRY_TIMEOUT_SECONDS = 30") { throw "Expected verified change in retained diff" }
+
   k8s-manifest-validate:
     name: Kubernetes manifest YAML validation
     runs-on: ubuntu-latest
@@ -195,6 +270,7 @@ jobs:
           docker build -f services/retrieval-service/Dockerfile -t cascade-ci/retrieval-service:test .
           docker build -f services/agent-orchestrator-service/Dockerfile -t cascade-ci/agent-orchestrator-service:test .
           docker build -f services/remediation-recommender-service/Dockerfile -t cascade-ci/remediation-recommender-service:test .
+          docker build -f services/project-qa-service/Dockerfile -t cascade-ci/project-qa-service:test .
 
   ci-summary:
     name: CI summary
@@ -204,6 +280,7 @@ jobs:
       - python-tests
       - frontend-build
       - powershell-parse
+      - project-qa-contract
       - k8s-manifest-validate
       - docker-build-smoke
     if: always()
@@ -216,12 +293,14 @@ jobs:
           echo "python-tests: ${{ needs.python-tests.result }}"
           echo "frontend-build: ${{ needs.frontend-build.result }}"
           echo "powershell-parse: ${{ needs.powershell-parse.result }}"
+          echo "project-qa-contract: ${{ needs.project-qa-contract.result }}"
           echo "k8s-manifest-validate: ${{ needs.k8s-manifest-validate.result }}"
           echo "docker-build-smoke: ${{ needs.docker-build-smoke.result }}"
           if [ "${{ needs.repo-hygiene.result }}" != "success" ] ||
              [ "${{ needs.python-tests.result }}" != "success" ] ||
              [ "${{ needs.frontend-build.result }}" != "success" ] ||
              [ "${{ needs.powershell-parse.result }}" != "success" ] ||
+             [ "${{ needs.project-qa-contract.result }}" != "success" ] ||
              [ "${{ needs.k8s-manifest-validate.result }}" != "success" ] ||
              [ "${{ needs.docker-build-smoke.result }}" != "success" ]; then
             exit 1

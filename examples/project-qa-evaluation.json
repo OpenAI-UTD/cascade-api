@@ -1,0 +1,71 @@
+{
+  "project": {
+    "project_id": "payments-api",
+    "name": "Payments API",
+    "repository": "https://example.invalid/team/payments-api",
+    "team": "checkout"
+  },
+  "revision": "abc123",
+  "branch": "feature/retry-policy",
+  "mode": "propose_fix",
+  "pipeline": {
+    "provider": "github-actions",
+    "pipeline_id": "991",
+    "job_url": "https://example.invalid/actions/runs/991"
+  },
+  "checks": [
+    {
+      "name": "unit tests",
+      "status": "failed",
+      "kind": "test",
+      "output": "RetryPolicyTest: timeout must be 30 seconds",
+      "file": "tests/test_retry.py",
+      "line": 42
+    },
+    {
+      "name": "lint",
+      "status": "passed",
+      "kind": "lint"
+    }
+  ],
+  "runtime_observations": [
+    {
+      "name": "checkout smoke test",
+      "status": "degraded",
+      "message": "Upstream request timed out during the test deployment",
+      "metric": "p95_ms",
+      "expected": "<500",
+      "actual": "2800"
+    }
+  ],
+  "documentation": [
+    {
+      "path": "docs/retries.md",
+      "content": "Payment retry timeout must be 30 seconds. Update RETRY_TIMEOUT_SECONDS when timeout tests fail.",
+      "tags": ["retry", "timeout"]
+    }
+  ],
+  "documented_fixes": [
+    {
+      "rule_id": "retry-timeout",
+      "issue_patterns": ["timeout must be 30 seconds"],
+      "title": "Use the documented retry timeout",
+      "recommendation": "Set RETRY_TIMEOUT_SECONDS to 30 as required by docs/retries.md.",
+      "documentation_path": "docs/retries.md",
+      "changes": [
+        {
+          "path": "src/config.py",
+          "original": "RETRY_TIMEOUT_SECONDS = 10",
+          "replacement": "RETRY_TIMEOUT_SECONDS = 30"
+        }
+      ]
+    }
+  ],
+  "source_files": [
+    {
+      "path": "src/config.py",
+      "content": "RETRY_TIMEOUT_SECONDS = 10\n"
+    }
+  ],
+  "fail_on": "high"
+}

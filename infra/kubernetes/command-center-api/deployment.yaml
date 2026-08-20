@@ -49,6 +49,8 @@ spec:
               value: http://anomaly-detector-service.cascade-system.svc.cluster.local:8014
             - name: FEATURE_EXTRACTOR_SERVICE_URL
               value: http://feature-extractor-service.cascade-system.svc.cluster.local:8013
+            - name: PROJECT_QA_SERVICE_URL
+              value: http://project-qa-service.cascade-system.svc.cluster.local:8040
             - name: PROXY_TIMEOUT_SECONDS
               value: "10"
             - name: ENABLE_DANGEROUS_ACTIONS

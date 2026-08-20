@@ -35,6 +35,7 @@ class Settings(BaseSettings):
     scheduler_service_url: str = "http://scheduler-service.cascade-system.svc.cluster.local:8025"
     anomaly_detector_service_url: str = "http://anomaly-detector-service.cascade-system.svc.cluster.local:8014"
     feature_extractor_service_url: str = "http://feature-extractor-service.cascade-system.svc.cluster.local:8013"
+    project_qa_service_url: str = "http://project-qa-service.cascade-system.svc.cluster.local:8040"
     proxy_timeout_seconds: float = 10.0
     enable_dangerous_actions: bool = False
     rate_limit_enabled: bool = True
@@ -100,6 +101,7 @@ ROUTES: dict[str, str] = {
     "scheduler": settings.scheduler_service_url,
     "anomaly": settings.anomaly_detector_service_url,
     "features": settings.feature_extractor_service_url,
+    "qa": settings.project_qa_service_url,
 }
 
 ALLOWED_METHODS = {"GET", "POST"}
@@ -129,6 +131,8 @@ SAFE_POST_PATHS = {
     ("autopilot", "runs"),
     ("scheduler", "scheduler/tick"),
     ("scheduler", "scheduler/items"),
+    ("qa", "evaluations"),
+    ("qa", "v1/qa/evaluations"),
 }
 
 ROUTE_ALIASES: dict[str, tuple[str, str]] = {
@@ -313,6 +317,8 @@ def _enforce_auth(prefix: str, upstream_path: str, method: str, request: Request
 
 
 def _is_sensitive_write(prefix: str, normalized_path: str) -> bool:
+    if prefix == "qa" and normalized_path in {"evaluations", "v1/qa/evaluations"}:
+        return True
     if prefix == "remediation/approval" and normalized_path == "approvals":
         return True
     if prefix == "remediation/executor":

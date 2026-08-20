@@ -1,8 +1,41 @@
 # Cascade
 
-Cascade is a Kubernetes-native AI reliability command center that observes an authorized target workload, builds topology, collects telemetry, detects abnormal behavior, predicts blast radius, ranks likely causes, and recommends policy-gated remediation with human approval and dry-run validation.
+Cascade is evolving into a project-agnostic QA platform for development teams. A project's CI pipeline submits test, build, lint, security, and runtime evidence through an API; Cascade turns that evidence into prioritized findings, documentation-grounded recommendations, a configurable quality gate, and conservative fix proposals.
 
-It is a local, production-inspired MVP for demonstrating how telemetry, incidents, runbooks, topology, safety policy, and operator workflows can be connected inside a Kubernetes reliability platform.
+The `dev` branch starts this transition with a standalone Project QA API that does not require a target project to run in Kubernetes. The existing Kubernetes reliability command center remains available as a legacy runtime-observability path while its investigation, knowledge, policy, and remediation capabilities are adapted behind the project QA contract.
+
+## Project QA API Quick Start
+
+```powershell
+python -m pip install -r services/project-qa-service/requirements.txt
+python -m uvicorn --app-dir services/project-qa-service app.main:app --host 0.0.0.0 --port 8040
+```
+
+In another terminal, submit the sample evidence:
+
+```powershell
+./scripts/invoke-project-qa.ps1 `
+  -PayloadPath examples/project-qa-evaluation.json `
+  -ApiUrl http://localhost:8040
+```
+
+Open `http://localhost:8040/docs` for the API schema. See [docs/project-qa-api.md](docs/project-qa-api.md) for multi-project CI integration, quality-gate behavior, and the guarded documentation-based fix flow.
+
+Run end-to-end repository QA with Docker isolation:
+
+```powershell
+python services/repo-qa-runner/app/main.py C:\path\to\project `
+  --api-url http://localhost:8040 `
+  --allow-dependency-network `
+  --pull-images `
+  --fix-mode apply
+```
+
+The runner detects Python, Node.js, Go, .NET, Maven, and Gradle projects; reads their documentation; executes an approved plan in constrained containers; and verifies proposed fixes by rerunning the project checks. See [docs/repo-qa-runner.md](docs/repo-qa-runner.md).
+
+## Existing Reliability Platform
+
+The sections below document the Kubernetes-focused capabilities that predate the Project QA API and remain operational during the transition.
 
 ## What It Does
 

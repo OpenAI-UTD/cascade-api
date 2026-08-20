@@ -1,0 +1,45 @@
+{
+  "project_id": "repo-qa-fixture",
+  "project_name": "Repository QA Fixture",
+  "fail_on": "high",
+  "replace_detected_commands": true,
+  "commands": [
+    {
+      "name": "Python compile",
+      "stack": "python",
+      "kind": "build",
+      "phase": "build",
+      "argv": ["python", "-m", "compileall", "-q", "."]
+    },
+    {
+      "name": "Python tests",
+      "stack": "python",
+      "kind": "test",
+      "phase": "test",
+      "argv": ["python", "-m", "unittest", "discover", "-v"]
+    },
+    {
+      "name": "Runtime smoke",
+      "stack": "python",
+      "kind": "runtime",
+      "phase": "runtime",
+      "argv": ["python", "runtime_smoke.py"]
+    }
+  ],
+  "documented_fixes": [
+    {
+      "rule_id": "retry-timeout",
+      "issue_patterns": ["timeout must be 30 seconds"],
+      "title": "Use the documented retry timeout",
+      "recommendation": "Set RETRY_TIMEOUT_SECONDS to 30 as required by docs/retries.md.",
+      "documentation_path": "docs/retries.md",
+      "changes": [
+        {
+          "path": "app_config.py",
+          "original": "RETRY_TIMEOUT_SECONDS = 10",
+          "replacement": "RETRY_TIMEOUT_SECONDS = 30"
+        }
+      ]
+    }
+  ]
+}

@@ -3067,6 +3067,65 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  name: project-qa-service
+  namespace: cascade-system
+  labels:
+    app: project-qa-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: project-qa-service
+  template:
+    metadata:
+      labels:
+        app: project-qa-service
+    spec:
+      containers:
+        - name: project-qa-service
+          image: cascade-project-qa-service:dev
+          imagePullPolicy: Never
+          ports:
+            - name: http
+              containerPort: 8040
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: http
+            initialDelaySeconds: 3
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 25m
+              memory: 64Mi
+            limits:
+              cpu: 250m
+              memory: 192Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: project-qa-service
+  namespace: cascade-system
+  labels:
+    app: project-qa-service
+spec:
+  selector:
+    app: project-qa-service
+  ports:
+    - name: http
+      port: 8040
+      targetPort: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
   name: command-center-api
   namespace: cascade-system
   labels:
@@ -3115,6 +3174,8 @@ spec:
               value: http://anomaly-detector-service.cascade-system.svc.cluster.local:8014
             - name: FEATURE_EXTRACTOR_SERVICE_URL
               value: http://feature-extractor-service.cascade-system.svc.cluster.local:8013
+            - name: PROJECT_QA_SERVICE_URL
+              value: http://project-qa-service.cascade-system.svc.cluster.local:8040
             - name: PROXY_TIMEOUT_SECONDS
               value: "10"
             - name: ENABLE_DANGEROUS_ACTIONS

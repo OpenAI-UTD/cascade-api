@@ -61,6 +61,8 @@ resources:
   - autopilot-service/service.yaml
   - scheduler-service/deployment.yaml
   - scheduler-service/service.yaml
+  - project-qa-service/deployment.yaml
+  - project-qa-service/service.yaml
   - command-center-api/deployment.yaml
   - command-center-api/service.yaml
   - command-center/deployment.yaml

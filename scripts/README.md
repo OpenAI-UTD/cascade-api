@@ -1,5 +1,10 @@
 # Cascade Scripts
 
+Project QA entry points:
+
+- `invoke-project-qa.ps1`: submit an already assembled CI/runtime evidence payload.
+- `../services/repo-qa-runner/app/main.py`: check out a project, detect its stack, execute approved checks in Docker, submit evidence, and optionally apply and verify documented fixes. See `../docs/repo-qa-runner.md`.
+
 Use these scripts from the repository root unless a script says otherwise.
 
 | Script | Purpose |

@@ -1,0 +1,43 @@
+{
+  "project_id": "payments-api",
+  "project_name": "Payments API",
+  "team": "checkout",
+  "stacks": ["python"],
+  "documentation": ["README.md", "docs/**/*.md"],
+  "fail_on": "high",
+  "replace_detected_commands": true,
+  "commands": [
+    {
+      "name": "Unit tests",
+      "stack": "python",
+      "kind": "test",
+      "phase": "test",
+      "argv": ["python", "-m", "unittest", "discover", "-v"],
+      "timeout_seconds": 300
+    },
+    {
+      "name": "Runtime smoke test",
+      "stack": "python",
+      "kind": "runtime",
+      "phase": "runtime",
+      "argv": ["python", "scripts/runtime_smoke.py"],
+      "timeout_seconds": 120
+    }
+  ],
+  "documented_fixes": [
+    {
+      "rule_id": "retry-timeout",
+      "issue_patterns": ["timeout must be 30 seconds"],
+      "title": "Use the documented retry timeout",
+      "recommendation": "Set RETRY_TIMEOUT_SECONDS to 30 as required by docs/retries.md.",
+      "documentation_path": "docs/retries.md",
+      "changes": [
+        {
+          "path": "src/config.py",
+          "original": "RETRY_TIMEOUT_SECONDS = 10",
+          "replacement": "RETRY_TIMEOUT_SECONDS = 30"
+        }
+      ]
+    }
+  ]
+}
