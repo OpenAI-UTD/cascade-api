@@ -10,6 +10,8 @@ import { IncidentsPage } from "./pages/IncidentsPage";
 import { InvestigationsPage } from "./pages/InvestigationsPage";
 import { KnowledgePage } from "./pages/KnowledgePage";
 import { OverviewPage } from "./pages/OverviewPage";
+import { QualityPage } from "./pages/QualityPage";
+import { EvalsPage } from "./pages/EvalsPage";
 import { RemediationPage } from "./pages/RemediationPage";
 import { SchedulerPage } from "./pages/SchedulerPage";
 import { SystemPage } from "./pages/SystemPage";
@@ -22,6 +24,8 @@ export default function App() {
       <Routes>
         <Route path="/" element={<OverviewPage />} />
         <Route path="/overview" element={<OverviewPage />} />
+        <Route path="/quality" element={<QualityPage />} />
+        <Route path="/evals" element={<EvalsPage />} />
         <Route path="/telemetry" element={<TelemetryPage />} />
         <Route path="/anomalies" element={<AnomaliesPage />} />
         <Route path="/audit" element={<AuditPage />} />

@@ -159,4 +159,5 @@ def _evaluation_payload(
         "documented_fixes": plan.config.documented_fixes,
         "source_files": plan.source_files,
         "fail_on": plan.config.fail_on,
+        "affiliation_lint": plan.config.affiliation_lint,
     }

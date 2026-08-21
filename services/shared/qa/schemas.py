@@ -23,7 +23,7 @@ class PipelineRef(BaseModel):
 class CheckResult(BaseModel):
     name: str = Field(min_length=1, max_length=200)
     status: Literal["passed", "failed", "error", "skipped"]
-    kind: Literal["test", "lint", "build", "security", "runtime", "other"] = "other"
+    kind: Literal["test", "lint", "build", "security", "runtime", "affiliation", "eval", "other"] = "other"
     output: str = Field(default="", max_length=20_000)
     file: str = Field(default="", max_length=1000)
     line: int | None = Field(default=None, ge=1)
@@ -84,6 +84,7 @@ class EvaluationRequest(BaseModel):
     documented_fixes: list[DocumentedFixRule] = Field(default_factory=list, max_length=100)
     source_files: list[SourceFile] = Field(default_factory=list, max_length=100)
     fail_on: Severity = "high"
+    affiliation_lint: bool = False
 
     @model_validator(mode="after")
     def require_evidence(self) -> EvaluationRequest:

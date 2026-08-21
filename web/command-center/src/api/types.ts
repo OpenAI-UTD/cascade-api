@@ -612,6 +612,37 @@ export interface HealthCheck {
   error?: string;
 }
 
+export interface QaProjectSummary {
+  project_id: string;
+  name?: string;
+  team?: string;
+  visibility?: string;
+  quota_runs_per_day?: number;
+  quota_remaining?: number;
+  registered_at?: string;
+  repository?: string;
+  last_run_at?: string;
+  run_count?: number;
+  gate_passed?: boolean | null;
+  findings?: number;
+}
+
+export interface QaEvalFixture {
+  fixture_id: string;
+  title: string;
+  category: string;
+  expect_status?: string;
+}
+
+export interface QaEvaluation extends JsonRecord {
+  evaluation_id?: string;
+  created_at?: string;
+  status?: string;
+  summary?: string;
+  quality_gate?: { passed?: boolean; blocking_findings?: number; fail_on?: string; reason?: string };
+  findings?: JsonRecord[];
+}
+
 export interface AuditEvent extends ContractMeta {
   event_id?: string;
   timestamp?: string;

@@ -34,6 +34,7 @@ class RunnerConfig:
     custom_commands: list[CommandSpec] = field(default_factory=list)
     replace_detected_commands: bool = False
     fail_on: str = "high"
+    affiliation_lint: bool = False
 
 
 @dataclass(frozen=True)

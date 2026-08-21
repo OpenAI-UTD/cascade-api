@@ -10,7 +10,7 @@ REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
 if str(REPOSITORY_ROOT) not in sys.path:
     sys.path.insert(0, str(REPOSITORY_ROOT))
 
-from services.shared.repo_qa.api import HttpQaClient  # noqa: E402
+from services.shared.repo_qa.api import HttpQaClient, InProcessQaClient  # noqa: E402
 from services.shared.repo_qa.checkout import Checkout, checkout_repository, cleanup_checkout  # noqa: E402
 from services.shared.repo_qa.config import load_runner_config, plan_project  # noqa: E402
 from services.shared.repo_qa.execution import DockerExecutor, LocalExecutor  # noqa: E402
@@ -32,6 +32,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--allow-dependency-network", action="store_true", help="Allow network only for commands marked as dependency setup")
     parser.add_argument("--pull-images", action="store_true", help="Allow Docker to pull missing approved stack images")
     parser.add_argument("--allow-local-execution", action="store_true", help="Acknowledge that the local executor is not isolated")
+    parser.add_argument("--in-process-qa", action="store_true", help="Evaluate with InProcessQaClient instead of HTTP (CI-friendly, no API server)")
     parser.add_argument("--keep-workspace", action="store_true", help="Keep the disposable checkout after the run")
     parser.add_argument("--plan-only", action="store_true", help="Print the detected plan without executing project code")
     return parser
@@ -60,7 +61,11 @@ def main(argv: list[str] | None = None) -> int:
             if args.executor == "docker"
             else LocalExecutor(allow_dependency_network=args.allow_dependency_network)
         )
-        client = HttpQaClient(args.api_url, api_key=os.getenv("CASCADE_QA_API_KEY", ""))
+        client = (
+            InProcessQaClient()
+            if args.in_process_qa
+            else HttpQaClient(args.api_url, api_key=os.getenv("CASCADE_QA_API_KEY", ""))
+        )
         result = RepoQaWorkflow(executor, client).run(
             checkout,
             plan,

@@ -272,6 +272,32 @@ jobs:
           docker build -f services/remediation-recommender-service/Dockerfile -t cascade-ci/remediation-recommender-service:test .
           docker build -f services/project-qa-service/Dockerfile -t cascade-ci/project-qa-service:test .
 
+  cascade-qa:
+    name: Cascade QA dogfood
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install runner dependencies
+        run: python -m pip install -r services/project-qa-service/requirements.txt
+
+      - name: Cascade QA
+        uses: ./.github/actions/cascade-qa
+        with:
+          cascade-repo: .
+          executor: local
+          allow-local-execution: "true"
+          in-process-qa: "true"
+          pull-images: "false"
+          fix-mode: recommend
+
   ci-summary:
     name: CI summary
     runs-on: ubuntu-latest
@@ -283,6 +309,7 @@ jobs:
       - project-qa-contract
       - k8s-manifest-validate
       - docker-build-smoke
+      - cascade-qa
     if: always()
     steps:
       - name: Print summary
@@ -296,13 +323,15 @@ jobs:
           echo "project-qa-contract: ${{ needs.project-qa-contract.result }}"
           echo "k8s-manifest-validate: ${{ needs.k8s-manifest-validate.result }}"
           echo "docker-build-smoke: ${{ needs.docker-build-smoke.result }}"
+          echo "cascade-qa: ${{ needs.cascade-qa.result }}"
           if [ "${{ needs.repo-hygiene.result }}" != "success" ] ||
              [ "${{ needs.python-tests.result }}" != "success" ] ||
              [ "${{ needs.frontend-build.result }}" != "success" ] ||
              [ "${{ needs.powershell-parse.result }}" != "success" ] ||
              [ "${{ needs.project-qa-contract.result }}" != "success" ] ||
              [ "${{ needs.k8s-manifest-validate.result }}" != "success" ] ||
-             [ "${{ needs.docker-build-smoke.result }}" != "success" ]; then
+             [ "${{ needs.docker-build-smoke.result }}" != "success" ] ||
+             [ "${{ needs.cascade-qa.result }}" != "success" ]; then
             exit 1
           fi
           echo "Cascade CI validation passed."

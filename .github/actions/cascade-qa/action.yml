@@ -1,0 +1,103 @@
+name: Cascade QA
+description: Run Cascade repo QA against a project checkout and publish gate results.
+inputs:
+  api-url:
+    description: Cascade Project QA API base URL
+    required: false
+    default: http://127.0.0.1:8040
+  api-key:
+    description: Bearer token for the QA API (optional when auth disabled)
+    required: false
+    default: ""
+  runner-path:
+    description: Path to repo-qa-runner main.py relative to workspace root
+    required: false
+    default: services/repo-qa-runner/app/main.py
+  cascade-repo:
+    description: Path to cascade-api checkout relative to workspace root (for sibling repos)
+    required: false
+    default: .
+  fix-mode:
+    description: recommend, propose, or apply
+    required: false
+    default: recommend
+  allow-project-commands:
+    description: Allow commands defined in qa-runner.json
+    required: false
+    default: "true"
+  allow-dependency-network:
+    description: Allow network during dependency install steps
+    required: false
+    default: "true"
+  pull-images:
+    description: Pull Docker images before running commands
+    required: false
+    default: "false"
+  executor:
+    description: docker or local (local requires allow-local-execution)
+    required: false
+    default: local
+  allow-local-execution:
+    description: Acknowledge local executor is not container-isolated
+    required: false
+    default: "true"
+  in-process-qa:
+    description: Use InProcessQaClient instead of HTTP (skip QA API server in CI)
+    required: false
+    default: "true"
+  result-path:
+    description: Path to write the evaluation JSON artifact
+    required: false
+    default: cascade-qa-result.json
+runs:
+  using: composite
+  steps:
+    - name: Run Cascade repo QA
+      shell: bash
+      env:
+        CASCADE_QA_API_URL: ${{ inputs.api-url }}
+        CASCADE_QA_API_KEY: ${{ inputs.api-key }}
+        RESULT_PATH: ${{ inputs.result-path }}
+      run: |
+        set -euo pipefail
+        CASCADE_ROOT="${{ github.workspace }}/${{ inputs.cascade-repo }}"
+        RUNNER="${CASCADE_ROOT}/${{ inputs.runner-path }}"
+        if [ ! -f "$RUNNER" ]; then
+          echo "Runner not found: $RUNNER" >&2
+          exit 1
+        fi
+        ARGS=(
+          "${{ github.workspace }}"
+          --result "$RESULT_PATH"
+          --fix-mode "${{ inputs.fix-mode }}"
+        )
+        if [ "${{ inputs.allow-project-commands }}" = "true" ]; then
+          ARGS+=(--allow-project-commands)
+        fi
+        if [ "${{ inputs.allow-dependency-network }}" = "true" ]; then
+          ARGS+=(--allow-dependency-network)
+        fi
+        if [ "${{ inputs.pull-images }}" = "true" ]; then
+          ARGS+=(--pull-images)
+        fi
+        if [ "${{ inputs.executor }}" = "local" ]; then
+          ARGS+=(--executor local)
+          if [ "${{ inputs.allow-local-execution }}" = "true" ]; then
+            ARGS+=(--allow-local-execution)
+          fi
+        fi
+        if [ "${{ inputs.in-process-qa }}" = "true" ]; then
+          ARGS+=(--in-process-qa)
+        else
+          ARGS+=(--api-url "$CASCADE_QA_API_URL")
+        fi
+        python "$RUNNER" "${ARGS[@]}"
+        python - <<'PY'
+        import json, os, sys
+        with open(os.environ["RESULT_PATH"], encoding="utf-8") as handle:
+            payload = json.load(handle)
+        gate = (payload.get("initial_evaluation") or payload).get("quality_gate") or {}
+        print(f"Gate passed: {gate.get('passed')}")
+        if not gate.get("passed"):
+            sys.exit(1)
+        PY

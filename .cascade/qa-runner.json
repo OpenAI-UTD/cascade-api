@@ -1,0 +1,30 @@
+{
+  "project_id": "cascade-api",
+  "project_name": "Cascade QA + Reliability Studio",
+  "team": "openai-utd",
+  "stacks": ["python"],
+  "documentation": ["README.md", "PROPOSAL.md", "docs/**/*.md"],
+  "source_files": ["README.md", "PROPOSAL.md"],
+  "affiliation_lint": true,
+  "fail_on": "high",
+  "replace_detected_commands": true,
+  "commands": [
+    {
+      "name": "Ruff lint",
+      "stack": "python",
+      "kind": "lint",
+      "phase": "lint",
+      "argv": ["python", "-m", "ruff", "check", "services", "tests"],
+      "timeout_seconds": 300
+    },
+    {
+      "name": "Pytest",
+      "stack": "python",
+      "kind": "test",
+      "phase": "test",
+      "argv": ["python", "-m", "pytest", "-q", "tests/test_project_qa_api.py", "tests/test_project_qa_core.py", "tests/test_affiliation_lint.py"],
+      "timeout_seconds": 900
+    }
+  ],
+  "documented_fixes": []
+}

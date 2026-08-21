@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -136,6 +137,7 @@ def test_full_runner_fixes_and_retests_disposable_checkout(tmp_path: Path) -> No
     )
     (source / "README.md").write_text("# Demo project\n", encoding="utf-8")
     (source / "docs" / "retries.md").write_text("Retry timeout must be 30 seconds.\n", encoding="utf-8")
+    python = "python3"
     (source / ".cascade" / "qa-runner.json").write_text(
         json.dumps(
             {
@@ -145,9 +147,9 @@ def test_full_runner_fixes_and_retests_disposable_checkout(tmp_path: Path) -> No
                     "stacks": ["python"],
                     "replace_detected_commands": True,
                     "commands": [
-                        {"name": "Python compile", "stack": "python", "kind": "build", "phase": "build", "argv": ["python", "-m", "compileall", "-q", "."]},
-                        {"name": "Python tests", "stack": "python", "kind": "test", "phase": "test", "argv": ["python", "-m", "unittest", "discover", "-v"]},
-                        {"name": "Runtime smoke", "stack": "python", "kind": "runtime", "phase": "runtime", "argv": ["python", "runtime_smoke.py"]},
+                        {"name": "Python compile", "stack": "python", "kind": "build", "phase": "build", "argv": [python, "-m", "compileall", "-q", "."]},
+                        {"name": "Python tests", "stack": "python", "kind": "test", "phase": "test", "argv": [python, "-m", "unittest", "discover", "-v"]},
+                        {"name": "Runtime smoke", "stack": "python", "kind": "runtime", "phase": "runtime", "argv": [python, "runtime_smoke.py"]},
                     ],
                 "documented_fixes": [
                     {

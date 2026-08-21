@@ -1,8 +1,49 @@
 # Cascade
 
+Club-facing elite upgrade (QA for website + Club API + Discord bot, affiliation lint, agent evals): **[PROPOSAL.md](./PROPOSAL.md)**. Platform map: [../PROPOSAL.md](../PROPOSAL.md). Existing SRE parallel plan is unchanged: [docs/operations/parallel-upgrade-plan.md](docs/operations/parallel-upgrade-plan.md).
+
 Cascade is evolving into a project-agnostic QA platform for development teams. A project's CI pipeline submits test, build, lint, security, and runtime evidence through an API; Cascade turns that evidence into prioritized findings, documentation-grounded recommendations, a configurable quality gate, and conservative fix proposals.
 
 The `dev` branch starts this transition with a standalone Project QA API that does not require a target project to run in Kubernetes. The existing Kubernetes reliability command center remains available as a legacy runtime-observability path while its investigation, knowledge, policy, and remediation capabilities are adapted behind the project QA contract.
+
+## Club QA (C0–C3)
+
+Production-oriented Project QA upgrades for the OpenAI Club at UT Dallas:
+
+- **C0 — Durable async QA:** SQLite-backed evaluations, optional bearer auth, async jobs (`POST /evaluations?async=true` → `202` + `job_id`, `GET /jobs/{id}`), optional webhook via `CASCADE_QA_WEBHOOK_URL`
+- **C0 — CI:** [`.github/actions/cascade-qa`](./.github/actions/cascade-qa/action.yml) with `--in-process-qa` + `--executor local --allow-local-execution` (no Docker/API server required in CI)
+- **C1 — Evals:** [`services/shared/qa/evals.py`](./services/shared/qa/evals.py) fixture catalog (affiliation + agent-authz), Command Center **Evals** tab at `/evals`
+- **C2 — Projects:** [`services/shared/qa/projects.py`](./services/shared/qa/projects.py) registry (`POST /projects/register`, enriched `GET /projects`), Quality tab project selector
+- **C3 — CLI:** [`scripts/cascade_cli.py`](./scripts/cascade_cli.py) — `eval`, `projects`, `health`
+- **Affiliation lint:** scans README/docs for club copy, forbidden OpenAI identity claims, and secret patterns
+- **Command Center Quality tab:** `/quality` — project gates and run history
+- **Club repo configs:** `.cascade/qa-runner.json` in this repo and sibling `openai-utd-api` / `discord-bot`
+
+### Cascade CLI
+
+```bash
+python scripts/cascade_cli.py health
+python scripts/cascade_cli.py projects list
+python scripts/cascade_cli.py projects register --project-id my-app --name "My App" --team openai-utd
+python scripts/cascade_cli.py eval . --in-process-qa --executor local --allow-project-commands
+```
+
+CI without a running QA API uses `--in-process-qa` (InProcessQaClient). For isolated container runs, omit that flag and start the Project QA API or point `--api-url` at a deployed service.
+
+### Async evaluations
+
+```bash
+curl -X POST 'http://localhost:8040/evaluations?async=true' \
+  -H 'Content-Type: application/json' \
+  -d @examples/project-qa-evaluation.json
+# → {"job_id":"job_…","status":"queued"}
+curl http://localhost:8040/jobs/job_…
+```
+
+Set `CASCADE_QA_WEBHOOK_URL` to receive a JSON callback when async jobs complete.
+
+- **Durable storage:** SQLite-backed evaluation store (`CASCADE_QA_DB_PATH`, default `.cascade/qa-evaluations.db`)
+- **API auth:** optional bearer keys via `CASCADE_AUTH_ENABLED` + `CASCADE_API_KEYS`
 
 ## Project QA API Quick Start
 

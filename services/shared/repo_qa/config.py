@@ -22,14 +22,14 @@ STACK_IMAGES = {
     "gradle": "gradle:8.12-jdk21",
 }
 STACK_EXECUTABLES = {
-    "python": {"python", ".cascade-venv/bin/python"},
+    "python": {"python", "python3", ".cascade-venv/bin/python"},
     "node": {"node", "npm"},
     "go": {"go"},
     "dotnet": {"dotnet"},
     "maven": {"mvn"},
     "gradle": {"gradle", "./gradlew"},
 }
-VALID_KINDS = {"test", "lint", "build", "security", "runtime", "other"}
+VALID_KINDS = {"test", "lint", "build", "security", "runtime", "affiliation", "eval", "other"}
 VALID_PHASES = {"setup", "install", "build", "test", "lint", "security", "runtime"}
 
 
@@ -72,6 +72,7 @@ def load_runner_config(root: Path, config_path: Path | None = None, *, allow_pro
     fail_on = str(raw.get("fail_on") or "high")
     if fail_on not in {"info", "low", "medium", "high", "critical"}:
         raise RunnerConfigError("fail_on must be info, low, medium, high, or critical")
+    affiliation_lint = bool(raw.get("affiliation_lint", False))
     commands = _custom_commands(raw.get("commands") or [], stacks, allow_project_commands)
     return RunnerConfig(
         project_id=project_id,
@@ -84,6 +85,7 @@ def load_runner_config(root: Path, config_path: Path | None = None, *, allow_pro
         custom_commands=commands,
         replace_detected_commands=bool(raw.get("replace_detected_commands", False)),
         fail_on=fail_on,
+        affiliation_lint=affiliation_lint,
     )
 
 

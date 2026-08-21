@@ -4,7 +4,7 @@ import { Badge } from "../components/Badge";
 export function AboutPage() {
   return (
     <div className="page about">
-      <div className="page-heading"><div><h2>About Cascade</h2><p>Cascade is a Kubernetes-native AI reliability platform for platform engineers, SREs, and incident responders.</p></div></div>
+      <div className="page-heading"><div><h2>About Cascade</h2><p>Cascade is the OpenAI Club at UT Dallas quality gate and optional reliability studio for teaching SRE and agent safety.</p></div></div>
       <section className="panel">
         <div className="section-title">Architecture overview</div>
         <div className="architecture-grid">

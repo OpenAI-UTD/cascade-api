@@ -1,0 +1,40 @@
+name: Cascade QA
+
+on:
+  pull_request:
+    branches: [main, dev]
+  push:
+    branches: [main, dev]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  cascade-qa:
+    name: Cascade QA gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install runner dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r services/project-qa-service/requirements.txt
+
+      - name: Cascade QA
+        uses: ./.github/actions/cascade-qa
+        with:
+          cascade-repo: .
+          executor: local
+          allow-local-execution: "true"
+          in-process-qa: "true"
+          pull-images: "false"
+          fix-mode: recommend

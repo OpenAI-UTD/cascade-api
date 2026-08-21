@@ -4,6 +4,8 @@ import hashlib
 import re
 from datetime import UTC, datetime
 
+from .affiliation import affiliation_findings
+from .evals import validate_submitted_eval_checks
 from .schemas import (
     DocumentedFixRule,
     EvaluationRequest,
@@ -28,6 +30,7 @@ GENERIC_RECOMMENDATIONS = {
 
 
 def evaluate(payload: EvaluationRequest) -> EvaluationResult:
+    payload = payload.model_copy(update={"checks": validate_submitted_eval_checks(payload.checks)})
     evaluation_id = _evaluation_id(payload)
     findings = _build_findings(payload, evaluation_id)
     proposed_changes, withheld = _propose_changes(payload, findings)
@@ -110,6 +113,10 @@ def _build_findings(payload: EvaluationRequest, evaluation_id: str) -> list[Find
                 evidence=EvidenceRef(source="runtime", name=observation.name, path=observation.file, line=observation.line),
             )
         )
+    if payload.source_files or payload.documentation:
+        if payload.affiliation_lint:
+            for raw in affiliation_findings(payload.source_files, payload.documentation, evaluation_id=evaluation_id, start_index=len(findings)):
+                findings.append(Finding.model_validate(raw))
     return findings
 
 
@@ -217,6 +224,10 @@ def _tokens(value: str) -> set[str]:
 
 
 def _check_severity(kind: str, status: str) -> Severity:
+    if kind == "affiliation":
+        return "critical" if status == "error" else "high"
+    if kind == "eval":
+        return "high" if status == "failed" else "medium"
     if kind == "security":
         return "critical" if status == "error" else "high"
     if kind in {"build", "runtime"}:

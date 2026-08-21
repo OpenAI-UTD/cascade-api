@@ -34,6 +34,9 @@ import type {
   TargetWorkload,
   TelemetryEvent,
   TopologyGraph,
+  QaProjectSummary,
+  QaEvaluation,
+  QaEvalFixture,
 } from "./types";
 
 const poll = { refetchInterval: refreshIntervalMs };
@@ -414,6 +417,31 @@ export function useSystemHealth() {
   return useQuery({
     queryKey: ["system-health"],
     queryFn: async (): Promise<HealthCheck[]> => Promise.all(healthTargets.map(checkHealth)),
+    ...poll,
+  });
+}
+
+export function useQaProjects(limit = 50) {
+  return useQuery({
+    queryKey: ["qa-projects", limit],
+    queryFn: () => apiGet<{ projects: QaProjectSummary[]; count: number }>("/qa/projects", { limit }),
+    ...poll,
+  });
+}
+
+export function useEvalFixtures() {
+  return useQuery({
+    queryKey: ["qa-eval-fixtures"],
+    queryFn: () => apiGet<{ fixtures: QaEvalFixture[]; count: number }>("/qa/evals"),
+    ...poll,
+  });
+}
+
+export function useProjectEvaluations(projectId?: string, limit = 20) {
+  return useQuery({
+    queryKey: ["qa-project-evaluations", projectId, limit],
+    enabled: Boolean(projectId),
+    queryFn: () => apiGet<{ project_id: string; evaluations: QaEvaluation[]; count: number }>(`/qa/projects/${projectId}/evaluations`, { limit }),
     ...poll,
   });
 }

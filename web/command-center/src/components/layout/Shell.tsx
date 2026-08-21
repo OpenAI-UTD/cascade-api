@@ -1,11 +1,13 @@
 import { NavLink } from "react-router-dom";
-import { AlertTriangle, Beaker, Bell, BookOpen, Bot, CalendarClock, ChevronDown, FileSearch, Gauge, GitBranch, History, Home, Info, Network, Plus, RadioTower, RefreshCw, Shield, Stethoscope, Wrench } from "lucide-react";
+import { AlertTriangle, Beaker, Bell, BookOpen, Bot, CalendarClock, ChevronDown, FileSearch, FlaskConical, Gauge, GitBranch, History, Home, Info, Network, Plus, RadioTower, RefreshCw, Shield, Stethoscope, Wrench, BadgeCheck } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { dangerousActionsEnabled } from "../../api/client";
 import { useSystemHealth } from "../../api/hooks";
 
 const nav = [
   { to: "/", label: "Overview", icon: Home },
+  { to: "/quality", label: "Quality", icon: BadgeCheck },
+  { to: "/evals", label: "Evals", icon: FlaskConical },
   { to: "/telemetry", label: "Telemetry", icon: RadioTower },
   { to: "/anomalies", label: "Anomalies", icon: AlertTriangle },
   { to: "/audit", label: "Audit", icon: History },
@@ -39,7 +41,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
           </svg>
           <div>
             <strong>Cascade</strong>
-            <span>Reliability Command Center</span>
+            <span>Club Quality + Reliability Studio</span>
           </div>
         </div>
         <div className={`safe-badge ${liveMode ? "live" : ""}`}>
