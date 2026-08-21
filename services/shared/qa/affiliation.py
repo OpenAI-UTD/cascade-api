@@ -9,6 +9,7 @@ FORBIDDEN_IDENTITY = re.compile(
     r"\b(?:we\s+are\s+openai|i\s+am\s+openai|official\s+openai\s+(?:website|product|service))\b",
     re.IGNORECASE,
 )
+NEGATION_HINT = re.compile(r"\b(?:never|do\s+not|does\s+not|don't|not\s+say|cannot\s+say|must\s+not)\b", re.IGNORECASE)
 REQUIRED_CLUB_NAME = re.compile(r"openai\s+club\s+at\s+ut\s+dallas", re.IGNORECASE)
 GENERIC_AI_GRADIENT = re.compile(r"#(?:7c3aed|8b5cf6|6366f1|a855f7)\b", re.IGNORECASE)
 SECRET_PATTERNS = [
@@ -36,6 +37,11 @@ def affiliation_findings(
         is_public_readme = basename in README_NAMES
 
         for match in FORBIDDEN_IDENTITY.finditer(content):
+            line_start = content.rfind("\n", 0, match.start()) + 1
+            line_end = content.find("\n", match.start())
+            line = content[line_start : line_end if line_end != -1 else len(content)]
+            if NEGATION_HINT.search(line):
+                continue
             findings.append(
                 _affiliation_finding(
                     evaluation_id,

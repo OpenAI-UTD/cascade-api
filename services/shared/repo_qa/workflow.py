@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import shutil
+import subprocess
 from pathlib import Path
 from typing import Any
 
@@ -9,6 +10,14 @@ from .checkout import Checkout, repository_diff
 from .config import load_source_files
 from .execution import CommandExecutor, execute_commands
 from .models import CommandResult, ProjectPlan, WorkflowResult
+
+
+def _bootstrap_checkout(root: Path, stacks: list[str], *, allow_network: bool) -> None:
+    """Install dependencies in disposable checkouts so project commands can run."""
+    if not allow_network:
+        return
+    if "node" in stacks and (root / "package.json").exists() and not (root / "node_modules").exists():
+        subprocess.run(["npm", "ci"], cwd=root, check=False, capture_output=True, text=True)
 
 
 class FixApplicationError(RuntimeError):
@@ -30,6 +39,8 @@ class RepoQaWorkflow:
     ) -> WorkflowResult:
         if fix_mode not in {"recommend", "propose", "apply"}:
             raise ValueError("fix_mode must be recommend, propose, or apply")
+        allow_network = getattr(self.executor, "allow_dependency_network", False)
+        _bootstrap_checkout(checkout.root, plan.stacks, allow_network=allow_network)
         command_results = execute_commands(self.executor, plan.commands, checkout.root)
         initial_payload = _evaluation_payload(
             checkout,

@@ -177,6 +177,10 @@ def _run_process(
 def _local_environment(workspace: Path, additions: dict[str, str]) -> dict[str, str]:
     keep = ["PATH", "PATHEXT", "SYSTEMROOT", "WINDIR", "COMSPEC", "TEMP", "TMP", "LANG", "LC_ALL"]
     environment = {key: os.environ[key] for key in keep if key in os.environ}
+    bin_dir = workspace / "node_modules" / ".bin"
+    if bin_dir.is_dir():
+        prefix = str(bin_dir)
+        environment["PATH"] = f"{prefix}{os.pathsep}{environment.get('PATH', '')}"
     environment.update({"HOME": str(workspace / ".cascade-home"), "CI": "true", **additions})
     return environment
 
