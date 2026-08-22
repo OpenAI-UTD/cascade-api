@@ -36,6 +36,7 @@ class Settings(BaseSettings):
     anomaly_detector_service_url: str = "http://anomaly-detector-service.cascade-system.svc.cluster.local:8014"
     feature_extractor_service_url: str = "http://feature-extractor-service.cascade-system.svc.cluster.local:8013"
     project_qa_service_url: str = "http://project-qa-service.cascade-system.svc.cluster.local:8040"
+    evals_service_url: str = "http://evals-service.cascade-system.svc.cluster.local:8041"
     proxy_timeout_seconds: float = 10.0
     enable_dangerous_actions: bool = False
     rate_limit_enabled: bool = True
@@ -102,6 +103,7 @@ ROUTES: dict[str, str] = {
     "anomaly": settings.anomaly_detector_service_url,
     "features": settings.feature_extractor_service_url,
     "qa": settings.project_qa_service_url,
+    "evals": settings.evals_service_url,
 }
 
 ALLOWED_METHODS = {"GET", "POST"}
@@ -133,6 +135,7 @@ SAFE_POST_PATHS = {
     ("scheduler", "scheduler/items"),
     ("qa", "evaluations"),
     ("qa", "v1/qa/evaluations"),
+    ("evals", "runs"),
 }
 
 ROUTE_ALIASES: dict[str, tuple[str, str]] = {

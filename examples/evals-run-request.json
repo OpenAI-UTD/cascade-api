@@ -1,0 +1,23 @@
+{
+  "project_name": "club-website",
+  "adapter": "heuristic",
+  "rubric": [
+    {
+      "name": "accuracy",
+      "weight": 0.6,
+      "description": "Answers are factually correct about club programs and events."
+    },
+    {
+      "name": "tone",
+      "weight": 0.4,
+      "description": "Responses keep a friendly, welcoming club tone."
+    }
+  ],
+  "cases": [
+    {
+      "name": "membership-question",
+      "input": "Anyone can join the OpenAI Club at UT Dallas. Membership is open to all students, and you can attend our next meetup to get involved.",
+      "expected": "open to all students"
+    }
+  ]
+}

@@ -63,6 +63,8 @@ resources:
   - scheduler-service/service.yaml
   - project-qa-service/deployment.yaml
   - project-qa-service/service.yaml
+  - evals-service/deployment.yaml
+  - evals-service/service.yaml
   - command-center-api/deployment.yaml
   - command-center-api/service.yaml
   - command-center/deployment.yaml

@@ -30,7 +30,7 @@ Affiliation bar: an OpenAI-sponsored club does not ship “we are OpenAI,” unt
 **Two products in one repo.**
 
 1. **Kubernetes reliability command center** (bulk of the tree). `kind-cascade`, Sock Shop in `cascade-targets`, Redpanda, ClickHouse, Qdrant, Prometheus, ~20 FastAPI services, Autopilot, chaos, remediation, Command Center UI. Safety-first, well documented, **not** production SaaS. API-key MVP. PowerShell-first. Live chaos/remediation = local-kind only.
-2. **Project QA API** (`services/project-qa-service:8040`) + **repo-qa-runner**. CI submits checks + runtime + docs; Cascade returns ranked findings, a quality gate, and *only* documentation-grounded exact-match fix proposals. Runner isolates in Docker. **Storage is in-memory, last 100 evaluations per project, auth off by default.** MVP, not a platform.
+2. **Project QA API** (`services/project-qa-service:8040`) + **repo-qa-runner**. CI submits checks + runtime + docs; Cascade returns ranked findings, a quality gate, and *only* documentation-grounded exact-match fix proposals. Runner isolates in Docker. **Storage is in-memory, last 100 evaluations per project, auth off by default.** MVP, not a platform. The dev branch now also ships the **Evals Studio API** (`services/evals-service:8041`), evals-as-a-service that scores prompt outputs against weighted rubrics with deterministic heuristics or an OpenAI-compatible judge (see `docs/evals-studio.md`).
 
 Command Center About page still leads with “Kubernetes-native AI reliability platform.” Club-facing product should lead with **Club quality + optional reliability studio**.
 

@@ -218,6 +218,69 @@ jobs:
           if (-not $result.passed) { throw "Expected final quality gate to pass" }
           if ($result.diff -notmatch "RETRY_TIMEOUT_SECONDS = 30") { throw "Expected verified change in retained diff" }
 
+  evals-service-contract:
+    name: Evals Studio API contract
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install Evals Studio API
+        run: python -m pip install -r services/evals-service/requirements.txt
+
+      - name: Start Evals Studio API
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m uvicorn --app-dir services/evals-service app.main:app --host 127.0.0.1 --port 8041 >evals-api.log 2>&1 &
+          for attempt in $(seq 1 20); do
+            if curl --fail --silent http://127.0.0.1:8041/ready >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat evals-api.log
+          exit 1
+
+      - name: Submit an eval run and verify completion
+        shell: bash
+        run: |
+          set -euo pipefail
+          accepted="$(curl --fail --silent \
+            -X POST http://127.0.0.1:8041/runs \
+            -H 'Content-Type: application/json' \
+            -d @examples/evals-run-request.json)"
+          echo "$accepted"
+          run_id="$(printf '%s' "$accepted" | python -c 'import json,sys; print(json.load(sys.stdin)["run_id"])')"
+          for attempt in $(seq 1 30); do
+            payload="$(curl --fail --silent http://127.0.0.1:8041/runs/$run_id)"
+            run_status="$(printf '%s' "$payload" | python -c 'import json,sys; print(json.load(sys.stdin)["status"])')"
+            if [ "$run_status" = "completed" ]; then
+              printf '%s\n' "$payload" | python -c 'import json,sys; run=json.load(sys.stdin); assert run["aggregate_score"] is not None; assert len(run["results"]) == 1; assert all(0 <= score["score"] <= 5 for result in run["results"] for score in result["scores"].values()); print(f"aggregate_score={run['"'"'aggregate_score'"'"']}")'
+              exit 0
+            fi
+            if [ "$run_status" = "failed" ]; then
+              echo "$payload"
+              exit 1
+            fi
+            sleep 1
+          done
+          echo "Eval run did not complete in time"
+          exit 1
+
+      - name: Verify adapters endpoint
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent http://127.0.0.1:8041/adapters | grep -o '"heuristic"' >/dev/null
+          curl --fail --silent http://127.0.0.1:8041/adapters | grep -o '"openai-compatible"' >/dev/null
+
   k8s-manifest-validate:
     name: Kubernetes manifest YAML validation
     runs-on: ubuntu-latest

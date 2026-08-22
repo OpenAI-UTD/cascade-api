@@ -74,6 +74,23 @@ python services/repo-qa-runner/app/main.py C:\path\to\project `
 
 The runner detects Python, Node.js, Go, .NET, Maven, and Gradle projects; reads their documentation; executes an approved plan in constrained containers; and verifies proposed fixes by rerunning the project checks. See [docs/repo-qa-runner.md](docs/repo-qa-runner.md).
 
+## Evals Studio API Quick Start
+
+`services/evals-service` (port **8041**) is evals-as-a-service: submit prompt-eval runs and get deterministic rubric scores plus cost/latency per case.
+
+```powershell
+python -m pip install -r services/evals-service/requirements.txt
+python -m uvicorn --app-dir services/evals-service app.main:app --host 0.0.0.0 --port 8041
+```
+
+```bash
+curl -X POST http://localhost:8041/runs -H 'Content-Type: application/json' \
+  -d @examples/evals-run-request.json
+# -> {"run_id":"run_…","status":"queued"}
+```
+
+The default `heuristic` adapter requires no network or API keys; the optional `openai-compatible` adapter judges outputs through any OpenAI-compatible chat-completions endpoint and degrades to the heuristic scorer on failure. See [docs/evals-studio.md](docs/evals-studio.md) for the scoring formula and adapter configuration.
+
 ## Existing Reliability Platform
 
 The sections below document the Kubernetes-focused capabilities that predate the Project QA API and remain operational during the transition.

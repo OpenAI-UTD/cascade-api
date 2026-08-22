@@ -129,17 +129,17 @@ try {
         Invoke-Checked "Apply $path" { kubectl apply -f $path }
     }
 
-    foreach ($deployment in @("project-qa-service", "command-center-api", "command-center")) {
+    foreach ($deployment in @("project-qa-service", "evals-service", "command-center-api", "command-center")) {
         Invoke-Checked "Restart $deployment" { kubectl -n $Namespace rollout restart "deployment/$deployment" }
     }
 
     Write-Section "Wait For Command Center UI Rollouts"
-    foreach ($deployment in @("project-qa-service", "command-center-api", "command-center")) {
+    foreach ($deployment in @("project-qa-service", "evals-service", "command-center-api", "command-center")) {
         Invoke-Checked "Wait for $deployment rollout" { kubectl -n $Namespace rollout status "deployment/$deployment" --timeout=240s }
     }
 
     Write-Section "Wait For Service Endpoints"
-    foreach ($service in @("project-qa-service", "command-center-api", "command-center")) {
+    foreach ($service in @("project-qa-service", "evals-service", "command-center-api", "command-center")) {
         Test-EndpointReady $service
         Write-Host "PASS: svc/$service has endpoints"
     }
@@ -150,6 +150,13 @@ try {
     $qaHealth = Invoke-HttpJson "http://localhost:$qaPort/health"
     if ($qaHealth.status -ne "ok") { throw "project-qa-service /health returned unexpected payload" }
     Write-Host "PASS: project-qa-service /health"
+    Stop-PortForwards
+
+    $evalsPort = Get-FreePort
+    Start-PortForward "evals-service" $evalsPort 8041 | Out-Null
+    $evalsHealth = Invoke-HttpJson "http://localhost:$evalsPort/health"
+    if ($evalsHealth.status -ne "ok") { throw "evals-service /health returned unexpected payload" }
+    Write-Host "PASS: evals-service /health"
     Stop-PortForwards
 
     $apiPort = Get-FreePort
