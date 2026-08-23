@@ -6,6 +6,26 @@ Cascade is evolving into a project-agnostic QA platform for development teams. A
 
 The `dev` branch starts this transition with a standalone Project QA API that does not require a target project to run in Kubernetes. The existing Kubernetes reliability command center remains available as a legacy runtime-observability path while its investigation, knowledge, policy, and remediation capabilities are adapted behind the project QA contract.
 
+## Service inventory — what is club-active vs SRE-legacy
+
+`services/` holds 28 services. Only a subset is exercised by Club QA (C0–C3). The rest are the legacy Kubernetes SRE platform kept for the parallel-upgrade plan and not in the runtime path for OpenAI-UTD. Do not assume every directory is club-load-bearing.
+
+**Club-active (Club QA C0–C3, in CI/runtime path for OpenAI-UTD):**
+
+| Service | Role |
+| --- | --- |
+| `project-qa-service` | Project QA API (`/evaluations`, `/jobs`, `/projects`) — the club-facing surface |
+| `repo-qa-runner` | Local/Docker runner that submits evidence to Project QA; powers `.github/actions/cascade-qa` |
+| `evals-service` | Rubric-scored prompt evals (C1) |
+| `shared/qa` | Affiliation lint + agent-authz eval fixtures, project registry |
+| `command-center-api` | BFF that exposes the Quality/Evals/Projects tabs to the UI |
+
+**SRE-legacy (Kubernetes reliability platform, not in the club runtime path):**
+
+`observation-service`, `stream-enricher`, `telemetry-archiver`, `feature-extractor-service`, `anomaly-detector-service`, `knowledge-ingestion-service`, `knowledge-retrieval-service`, `retrieval-service`, `memory-indexer`, `agent-tool-gateway`, `agent-orchestrator-service`, `topology-service`, `chaos-planner-service`, `chaos-executor-service`, `remediation-recommender-service`, `remediation-executor-service`, `approval-service`, `autopilot-service`, `causal-reconstruction-service`, `incident-timeline-service`, `experiment-tracker-service`, `scheduler-service`.
+
+These remain for the SRE parallel-upgrade plan ([docs/operations/parallel-upgrade-plan.md](docs/operations/parallel-upgrade-plan.md)) and the kind-based demo. They are not deployed for OpenAI-UTD club operations and are not gated on club repo `main`. If you are contributing club QA work, start in `project-qa-service`, `repo-qa-runner`, `evals-service`, or `shared/qa`.
+
 ## Club QA (C0–C3)
 
 Production-oriented Project QA upgrades for the OpenAI Club at UT Dallas:
