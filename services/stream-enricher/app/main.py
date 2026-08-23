@@ -8,11 +8,14 @@ from fastapi import FastAPI
 
 from app.kafka_worker import StreamEnricherWorker
 from app.models import HealthResponse, Settings
+from services.shared.security.auth import binding_guard
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
 logger = logging.getLogger(__name__)
 
 settings = Settings()
+
+binding_guard(settings)
 worker = StreamEnricherWorker(settings)
 
 

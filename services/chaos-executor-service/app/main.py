@@ -4,6 +4,7 @@ import asyncio
 import json
 import logging
 import uuid
+from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from typing import Any
 
@@ -22,7 +23,7 @@ from services.shared.kafka.config import KafkaSettings
 from services.shared.kafka.producer import KafkaProducer
 from services.shared.live_demo import LiveDemoConfig, validate_live_demo_gate
 from services.shared.security.approval import approval_valid_for_plan
-from services.shared.security.auth import AuthSettings, auth_status, require_auth
+from services.shared.security.auth import AuthSettings, auth_status, binding_guard, require_auth
 from services.shared.storage.clickhouse_client import ClickHouseClient
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
@@ -57,14 +58,15 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
+binding_guard(settings)
 clickhouse = ClickHouseClient()
 producer = KafkaProducer(KafkaSettings(kafka_bootstrap_servers=settings.kafka_bootstrap_servers, kafka_client_id="chaos-executor-service"))
 k8s: KubernetesChaosClient | None = None
-app = FastAPI(title="Cascade Chaos Executor Service", version="0.1.0")
 
 
-@app.on_event("startup")
-async def startup() -> None:
+@asynccontextmanager
+async def lifespan(_: FastAPI):
     global k8s
     await clickhouse.initialize_schema()
     try:
@@ -74,12 +76,14 @@ async def startup() -> None:
         k8s = None
     if settings.chaos_publish_events:
         await producer.start()
+    try:
+        yield
+    finally:
+        if settings.chaos_publish_events:
+            await producer.stop()
 
 
-@app.on_event("shutdown")
-async def shutdown() -> None:
-    if settings.chaos_publish_events:
-        await producer.stop()
+app = FastAPI(title="Cascade Chaos Executor Service", version="0.1.0", lifespan=lifespan)
 
 
 @app.get("/health")

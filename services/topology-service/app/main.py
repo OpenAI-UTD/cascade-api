@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, Query
 
 from app.models import BlastRadiusRequest, CriticalPathsRequest, DependenciesResponse, DirectionalServicesResponse, HealthResponse, ImpactRequest, ImpactResponse, TrafficInferenceRequest, TopologyRefreshRequest, TopologyResponse
@@ -8,14 +10,20 @@ from services.shared.audit import build_audit_event, emit_audit_event
 from services.shared.storage.clickhouse_client import ClickHouseClient
 from services.shared.targets.catalog import ACTIVE_TARGET
 from services.shared.topology.discovery import build_discovered_topology
+from services.shared.security.auth import binding_guard
 
-app = FastAPI(title="Cascade Topology Service", version="0.1.0")
 clickhouse = ClickHouseClient()
 
 
-@app.on_event("startup")
-async def startup() -> None:
+@asynccontextmanager
+async def lifespan(_: FastAPI):
     await clickhouse.initialize_schema()
+    yield
+
+
+app = FastAPI(title="Cascade Topology Service", version="0.1.0", lifespan=lifespan)
+
+binding_guard()
 
 
 @app.get("/health", response_model=HealthResponse)

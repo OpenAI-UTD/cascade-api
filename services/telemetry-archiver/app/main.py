@@ -14,6 +14,7 @@ from services.shared.events.mapping import map_experiment_event, map_telemetry_e
 from services.shared.kafka.config import KafkaSettings
 from services.shared.kafka.consumer import KafkaConsumer
 from services.shared.storage.clickhouse_client import ClickHouseClient
+from services.shared.security.auth import binding_guard
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
 logger = logging.getLogger(__name__)
@@ -46,6 +47,8 @@ class Counters:
 
 
 settings = Settings()
+
+binding_guard(settings)
 clickhouse = ClickHouseClient()
 counters = Counters()
 

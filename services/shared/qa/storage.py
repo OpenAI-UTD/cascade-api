@@ -4,7 +4,6 @@ import json
 import os
 import sqlite3
 import threading
-from collections import deque
 from pathlib import Path
 from typing import Any
 

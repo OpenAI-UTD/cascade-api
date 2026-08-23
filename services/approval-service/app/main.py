@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import logging
 import uuid
+from contextlib import asynccontextmanager
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
@@ -17,7 +18,7 @@ from services.shared.remediation.events import remediation_event
 from services.shared.remediation.safety import validate_approval
 from services.shared.remediation.schemas import ApprovalRequest
 from services.shared.security.approval import approval_metadata
-from services.shared.security.auth import AuthSettings, auth_status, require_auth
+from services.shared.security.auth import AuthSettings, auth_status, binding_guard, require_auth
 from services.shared.storage.clickhouse_client import ClickHouseClient
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
@@ -39,22 +40,25 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
+binding_guard(settings)
 clickhouse = ClickHouseClient()
 producer = KafkaProducer(KafkaSettings(kafka_bootstrap_servers=settings.kafka_bootstrap_servers, kafka_client_id="approval-service"))
-app = FastAPI(title="Cascade Approval Service", version="0.1.0")
 
 
-@app.on_event("startup")
-async def startup() -> None:
+@asynccontextmanager
+async def lifespan(_: FastAPI):
     await clickhouse.initialize_schema()
     if settings.remediation_publish_events:
         await producer.start()
+    try:
+        yield
+    finally:
+        if settings.remediation_publish_events:
+            await producer.stop()
 
 
-@app.on_event("shutdown")
-async def shutdown() -> None:
-    if settings.remediation_publish_events:
-        await producer.stop()
+app = FastAPI(title="Cascade Approval Service", version="0.1.0", lifespan=lifespan)
 
 
 @app.get("/health")

@@ -24,6 +24,8 @@ spec:
             - name: http
               containerPort: 8000
           env:
+            - name: CASCADE_BIND_HOST
+              value: "0.0.0.0"
             - name: PROMETHEUS_URL
               value: http://prometheus-stack-kube-prom-prometheus.monitoring.svc.cluster.local:9090
             - name: TARGET_NAMESPACE

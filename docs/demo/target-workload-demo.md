@@ -111,4 +111,4 @@ Recommended demo flow:
 
 ## Legacy Online Boutique Source
 
-`targets/online-boutique-src/` is retained as an inactive upstream source snapshot for historical reference. Do not deploy it for current Cascade demos unless you are deliberately testing legacy compatibility.
+`targets/online-boutique-src/` is an empty, fetch-on-demand placeholder (the old submodule-style gitlink had no `.gitmodules`, so fresh clones got an empty directory). Fetch instructions live in `targets/online-boutique-src/README.md`. Do not deploy it for current Cascade demos unless you are deliberately testing legacy compatibility.

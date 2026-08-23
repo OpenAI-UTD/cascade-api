@@ -23,6 +23,8 @@ spec:
             - name: http
               containerPort: 8001
           env:
+            - name: CASCADE_BIND_HOST
+              value: "0.0.0.0"
             - name: KAFKA_BOOTSTRAP_SERVERS
               value: redpanda.cascade-system.svc.cluster.local:9092
             - name: KAFKA_RAW_TOPIC

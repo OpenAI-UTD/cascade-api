@@ -11,7 +11,8 @@ from services.shared.qa.evals import fixture_catalog, run_eval_fixtures, summari
 from services.shared.qa.jobs import JobAcceptedResponse, JobDetailResponse, JobQueue
 from services.shared.qa.projects import ProjectRegistration, ProjectRegistry
 from services.shared.qa.storage import EvaluationStore
-from services.shared.security.auth import AuthSettings, auth_status, require_auth
+from services.shared.security.auth import AuthSettings, auth_status, binding_guard, require_auth
+from services.shared.security.ratelimit import RateLimitMiddleware, TokenBucketRateLimiter
 
 app = FastAPI(
     title="Cascade Project QA API",
@@ -28,14 +29,29 @@ class Settings(BaseSettings):
     cascade_auth_header: str = "Authorization"
     cascade_qa_db_path: str = ".cascade/qa-evaluations.db"
     cascade_qa_webhook_url: str = ""
+    cascade_qa_rate_limit_per_minute: int = 30
 
     model_config = SettingsConfigDict(env_prefix="", case_sensitive=False)
 
 
 settings = Settings()
+
+binding_guard(settings)
+
 store = EvaluationStore(settings.cascade_qa_db_path)
 registry = ProjectRegistry(settings.cascade_qa_db_path)
 job_queue = JobQueue(settings.cascade_qa_db_path, webhook_url=settings.cascade_qa_webhook_url)
+rate_limiter = TokenBucketRateLimiter(capacity=settings.cascade_qa_rate_limit_per_minute)
+if settings.cascade_qa_rate_limit_per_minute > 0:
+    app.add_middleware(
+        RateLimitMiddleware,
+        limiter=rate_limiter,
+        routes=[("POST", "/evaluations"), ("POST", "/v1/qa/evaluations")],
+        message=(
+            "Request rate limit exceeded for this address; "
+            f"limit is {settings.cascade_qa_rate_limit_per_minute} evaluations per minute"
+        ),
+    )
 
 
 def _auth_settings() -> AuthSettings:

@@ -242,3 +242,10 @@ runs/
 !docs/knowledge/**
 !docs/**/*.md
 !README.md
+
+# Python bytecode caches are never tracked, even under negated trees above.
+# Keep these AFTER the `!examples/**` style negations: gitignore uses
+# last-match-wins, so an earlier `__pycache__/` rule is overridden by
+# `!examples/**` and would otherwise re-include examples/**/__pycache__/.
+**/__pycache__/
+examples/**/__pycache__/

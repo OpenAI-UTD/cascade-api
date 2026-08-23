@@ -5,8 +5,11 @@ from fastapi import FastAPI
 from app.models import HealthResponse, IncidentReport, ReportRequest, TimelineRequest, TimelineResponse
 from app.report import build_markdown
 from app.timeline import build_timeline
+from services.shared.security.auth import binding_guard
 
 app = FastAPI(title="Cascade Incident Timeline Service", version="0.1.0")
+
+binding_guard()
 
 
 @app.get("/health", response_model=HealthResponse)

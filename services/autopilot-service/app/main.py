@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import logging
+from contextlib import asynccontextmanager
 from typing import Any
 
 import httpx
@@ -14,7 +15,7 @@ from services.shared.autopilot.schemas import AutopilotRunRecord, AutopilotRunRe
 from services.shared.autopilot.workflow import AutopilotWorkflow
 from services.shared.kafka.config import KafkaSettings
 from services.shared.kafka.producer import KafkaProducer
-from services.shared.security.auth import AuthSettings, auth_status, require_auth
+from services.shared.security.auth import AuthSettings, auth_status, binding_guard, require_auth
 from services.shared.storage.clickhouse_client import ClickHouseClient
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
@@ -43,10 +44,11 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
+binding_guard(settings)
 clickhouse = ClickHouseClient()
 producer = KafkaProducer(KafkaSettings(kafka_bootstrap_servers=settings.kafka_bootstrap_servers, kafka_client_id="autopilot-service"))
 recorder = None
-app = FastAPI(title="Cascade Autopilot Service", version="0.1.0")
 
 
 class ClickHouseAutopilotRecorder:
@@ -203,19 +205,21 @@ class HttpAutopilotClient:
             return data if isinstance(data, dict) else {"payload": data}
 
 
-@app.on_event("startup")
-async def startup() -> None:
+@asynccontextmanager
+async def lifespan(_: FastAPI):
     global recorder
     await clickhouse.initialize_schema()
     recorder = ClickHouseAutopilotRecorder(clickhouse)
     if settings.autopilot_publish_events:
         await producer.start()
+    try:
+        yield
+    finally:
+        if settings.autopilot_publish_events:
+            await producer.stop()
 
 
-@app.on_event("shutdown")
-async def shutdown() -> None:
-    if settings.autopilot_publish_events:
-        await producer.stop()
+app = FastAPI(title="Cascade Autopilot Service", version="0.1.0", lifespan=lifespan)
 
 
 @app.get("/health")

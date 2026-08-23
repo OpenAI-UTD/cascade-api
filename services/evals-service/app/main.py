@@ -9,7 +9,8 @@ from fastapi import Depends, FastAPI, HTTPException, Query, Request, status
 from fastapi.responses import JSONResponse
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from services.shared.security.auth import AuthSettings, auth_status, require_auth
+from services.shared.security.auth import AuthSettings, auth_status, binding_guard, require_auth
+from services.shared.security.ratelimit import RateLimitMiddleware, TokenBucketRateLimiter
 
 from .engine import EngineSettings, adapters_catalog, estimate_cost, run_case, weighted_score
 from .schemas import CaseResult, RunCreate, RunResult
@@ -34,12 +35,27 @@ class Settings(BaseSettings):
     cascade_evals_llm_model: str = ""
     cascade_evals_price_in_per_mtok: float = 0.15
     cascade_evals_price_out_per_mtok: float = 0.60
+    cascade_evals_rate_limit_per_minute: int = 30
 
     model_config = SettingsConfigDict(env_prefix="", case_sensitive=False)
 
 
 settings = Settings()
+
+binding_guard(settings)
+
 store = RunStore(settings.cascade_evals_db_path)
+rate_limiter = TokenBucketRateLimiter(capacity=settings.cascade_evals_rate_limit_per_minute)
+if settings.cascade_evals_rate_limit_per_minute > 0:
+    app.add_middleware(
+        RateLimitMiddleware,
+        limiter=rate_limiter,
+        routes=[("POST", "/runs")],
+        message=(
+            "Too many eval run submissions from this address; "
+            f"limit is {settings.cascade_evals_rate_limit_per_minute} per minute"
+        ),
+    )
 
 
 def _auth_settings() -> AuthSettings:

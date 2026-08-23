@@ -23,6 +23,8 @@ spec:
             - name: http
               containerPort: 8017
           env:
+            - name: CASCADE_BIND_HOST
+              value: "0.0.0.0"
             - name: RETRIEVAL_SERVICE_URL
               value: http://retrieval-service.cascade-system.svc.cluster.local:8012
             - name: KNOWLEDGE_RETRIEVAL_SERVICE_URL

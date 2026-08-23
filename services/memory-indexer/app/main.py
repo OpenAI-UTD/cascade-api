@@ -15,6 +15,7 @@ from services.shared.events.mapping import build_memory_document, build_memory_p
 from services.shared.kafka.config import KafkaSettings
 from services.shared.kafka.consumer import KafkaConsumer
 from services.shared.storage.qdrant_client import QdrantClient, QdrantSettings
+from services.shared.security.auth import binding_guard
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
 logger = logging.getLogger(__name__)
@@ -54,6 +55,8 @@ class Counters:
 
 
 settings = Settings()
+
+binding_guard(settings)
 qdrant = QdrantClient(QdrantSettings(embedding_dimensions=settings.embedding_dimensions))
 counters = Counters()
 

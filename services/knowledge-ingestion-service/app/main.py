@@ -5,6 +5,7 @@ import json
 import logging
 import time
 import uuid
+from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -18,6 +19,7 @@ from services.shared.knowledge.chunking import chunk_document
 from services.shared.knowledge.documents import build_document, load_repo_documents
 from services.shared.storage.clickhouse_client import ClickHouseClient
 from services.shared.storage.qdrant_client import QdrantClient, QdrantSettings
+from services.shared.security.auth import binding_guard
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
 logger = logging.getLogger(__name__)
@@ -47,20 +49,33 @@ class LimitRequest(BaseModel):
 
 
 settings = Settings()
+
+binding_guard(settings)
 clickhouse = ClickHouseClient()
 qdrant = QdrantClient(QdrantSettings(embedding_dimensions=settings.embedding_dimensions, qdrant_knowledge_collection=settings.qdrant_knowledge_collection))
 last_ingest: dict[str, Any] = {"status": "not_started", "last_error": ""}
+_background_task: asyncio.Task[None] | None = None
 
 
-app = FastAPI(title="Cascade Knowledge Ingestion Service", version="0.1.0")
-
-
-@app.on_event("startup")
-async def startup() -> None:
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    global _background_task
     await clickhouse.initialize_schema()
     await qdrant.ensure_knowledge_collection()
     if settings.knowledge_background_enabled:
-        asyncio.create_task(background_loop())
+        _background_task = asyncio.create_task(background_loop())
+    try:
+        yield
+    finally:
+        if _background_task:
+            _background_task.cancel()
+            try:
+                await _background_task
+            except asyncio.CancelledError:
+                pass
+
+
+app = FastAPI(title="Cascade Knowledge Ingestion Service", version="0.1.0", lifespan=lifespan)
 
 
 @app.get("/health")

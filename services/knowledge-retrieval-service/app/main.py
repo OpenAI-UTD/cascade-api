@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import time
 import uuid
+from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from typing import Any
 
@@ -14,6 +15,7 @@ from services.shared.knowledge.context import assemble_context_pack
 from services.shared.knowledge.search import KnowledgeSearchRequest
 from services.shared.storage.clickhouse_client import ClickHouseClient
 from services.shared.storage.qdrant_client import QdrantClient, QdrantSettings
+from services.shared.security.auth import binding_guard
 
 
 class Settings(BaseSettings):
@@ -24,15 +26,20 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
+binding_guard(settings)
 clickhouse = ClickHouseClient()
 qdrant = QdrantClient(QdrantSettings(embedding_dimensions=settings.embedding_dimensions, qdrant_knowledge_collection=settings.qdrant_knowledge_collection))
-app = FastAPI(title="Cascade Knowledge Retrieval Service", version="0.1.0")
 
 
-@app.on_event("startup")
-async def startup() -> None:
+@asynccontextmanager
+async def lifespan(_: FastAPI):
     await clickhouse.initialize_schema()
     await qdrant.ensure_knowledge_collection()
+    yield
+
+
+app = FastAPI(title="Cascade Knowledge Retrieval Service", version="0.1.0", lifespan=lifespan)
 
 
 @app.get("/health")

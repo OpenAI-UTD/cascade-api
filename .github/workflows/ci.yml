@@ -335,6 +335,80 @@ jobs:
           docker build -f services/remediation-recommender-service/Dockerfile -t cascade-ci/remediation-recommender-service:test .
           docker build -f services/project-qa-service/Dockerfile -t cascade-ci/project-qa-service:test .
 
+  dependency-audit:
+    name: Dependency vulnerabilities
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install Python dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install pip-audit
+          while IFS= read -r req; do
+            echo "Installing $req"
+            python -m pip install -r "$req"
+          done < <(find services -mindepth 2 -maxdepth 2 -name requirements.txt | sort)
+
+      - name: pip-audit (fail on GHSA, warn on PYSEC-only)
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Environment audit covers every service requirements.txt installed above.
+          pip-audit --format json --output pip-audit.json >/dev/null 2>&1 || true
+          python - <<'PY'
+          import json
+          import sys
+
+          report = json.load(open("pip-audit.json", encoding="utf-8"))
+          ghsa: list[str] = []
+          other: list[str] = []
+          for dependency in report.get("dependencies", []):
+              for vuln in dependency.get("vulns", []):
+                  vuln_id = vuln.get("id", "UNKNOWN")
+                  fix = ", ".join(dependency.get("fixed_versions") or [])
+                  line = f"{dependency.get('name')}=={dependency.get('version')} {vuln_id}"
+                  if fix:
+                      line += f" (fix available: {fix})"
+                  alias_github = any(a.startswith("GHSA-") for a in vuln.get("aliases", []))
+                  if vuln_id.startswith("GHSA-") or alias_github:
+                      ghsa.append(line)
+                  else:
+                      other.append(line)
+
+          if other:
+              print("WARNING: PYSEC-only advisories found (non-blocking):")
+              for entry in sorted(other):
+                  print(f"  - {entry}")
+          if ghsa:
+              print("ERROR: GitHub-reviewed (GHSA) advisories found:")
+              for entry in sorted(ghsa):
+                  print(f"  - {entry}")
+              sys.exit(1)
+          if not ghsa and not other:
+              print("No known vulnerabilities in the Python environment.")
+          PY
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/command-center/package-lock.json
+
+      - name: npm audit (fail on high or critical)
+        working-directory: web/command-center
+        run: npm audit --audit-level=high
+
   cascade-qa:
     name: Cascade QA dogfood
     runs-on: ubuntu-latest
@@ -372,6 +446,7 @@ jobs:
       - project-qa-contract
       - k8s-manifest-validate
       - docker-build-smoke
+      - dependency-audit
       - cascade-qa
     if: always()
     steps:
@@ -386,6 +461,7 @@ jobs:
           echo "project-qa-contract: ${{ needs.project-qa-contract.result }}"
           echo "k8s-manifest-validate: ${{ needs.k8s-manifest-validate.result }}"
           echo "docker-build-smoke: ${{ needs.docker-build-smoke.result }}"
+          echo "dependency-audit: ${{ needs.dependency-audit.result }}"
           echo "cascade-qa: ${{ needs.cascade-qa.result }}"
           if [ "${{ needs.repo-hygiene.result }}" != "success" ] ||
              [ "${{ needs.python-tests.result }}" != "success" ] ||
@@ -394,6 +470,7 @@ jobs:
              [ "${{ needs.project-qa-contract.result }}" != "success" ] ||
              [ "${{ needs.k8s-manifest-validate.result }}" != "success" ] ||
              [ "${{ needs.docker-build-smoke.result }}" != "success" ] ||
+             [ "${{ needs.dependency-audit.result }}" != "success" ] ||
              [ "${{ needs.cascade-qa.result }}" != "success" ]; then
             exit 1
           fi

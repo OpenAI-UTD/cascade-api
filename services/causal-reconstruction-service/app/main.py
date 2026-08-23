@@ -10,10 +10,13 @@ from app.kafka_reader import EventBuffer, consume_topic
 from app.models import HealthResponse, IncidentRecord, ReconstructRequest, Settings
 from app.reconstructor import reconstruct
 from services.shared.kafka.config import KafkaSettings
+from services.shared.security.auth import binding_guard
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
 
 settings = Settings()
+
+binding_guard(settings)
 buffer = EventBuffer()
 incidents: dict[str, IncidentRecord] = {}
 

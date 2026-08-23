@@ -1214,6 +1214,8 @@ spec:
             - name: http
               containerPort: 8000
           env:
+            - name: CASCADE_BIND_HOST
+              value: "0.0.0.0"
             - name: PROMETHEUS_URL
               value: http://prometheus-stack-kube-prom-prometheus.monitoring.svc.cluster.local:9090
             - name: TARGET_NAMESPACE
@@ -1289,6 +1291,8 @@ spec:
             - name: http
               containerPort: 8001
           env:
+            - name: CASCADE_BIND_HOST
+              value: "0.0.0.0"
             - name: KAFKA_BOOTSTRAP_SERVERS
               value: redpanda.cascade-system.svc.cluster.local:9092
             - name: KAFKA_RAW_TOPIC
@@ -1362,6 +1366,8 @@ spec:
             - name: http
               containerPort: 8002
           env:
+            - name: CASCADE_BIND_HOST
+              value: "0.0.0.0"
             - name: KAFKA_BOOTSTRAP_SERVERS
               value: redpanda.cascade-system.svc.cluster.local:9092
             - name: EXPERIMENT_TOPIC
@@ -1429,6 +1435,8 @@ spec:
             - name: http
               containerPort: 8005
           env:
+            - name: CASCADE_BIND_HOST
+              value: "0.0.0.0"
             - name: KAFKA_BOOTSTRAP_SERVERS
               value: redpanda.cascade-system.svc.cluster.local:9092
             - name: EXPERIMENT_TOPIC
@@ -1532,6 +1540,8 @@ spec:
             - name: http
               containerPort: 8004
           env:
+            - name: CASCADE_BIND_HOST
+              value: "0.0.0.0"
             - name: WEB_CONCURRENCY
               value: "1"
           resources:
@@ -1595,6 +1605,8 @@ spec:
             - name: http
               containerPort: 8006
           env:
+            - name: CASCADE_BIND_HOST
+              value: "0.0.0.0"
             - name: WEB_CONCURRENCY
               value: "1"
           resources:
@@ -1658,6 +1670,8 @@ spec:
             - name: http
               containerPort: 8010
           env:
+            - name: CASCADE_BIND_HOST
+              value: "0.0.0.0"
             - name: KAFKA_BOOTSTRAP_SERVERS
               value: redpanda.cascade-system.svc.cluster.local:9092
             - name: TELEMETRY_ENRICHED_TOPIC
@@ -1733,6 +1747,8 @@ spec:
             - name: http
               containerPort: 8011
           env:
+            - name: CASCADE_BIND_HOST
+              value: "0.0.0.0"
             - name: KAFKA_BOOTSTRAP_SERVERS
               value: redpanda.cascade-system.svc.cluster.local:9092
             - name: TELEMETRY_ENRICHED_TOPIC
@@ -1808,6 +1824,8 @@ spec:
             - name: http
               containerPort: 8012
           env:
+            - name: CASCADE_BIND_HOST
+              value: "0.0.0.0"
             - name: CLICKHOUSE_HOST
               value: clickhouse.cascade-system.svc.cluster.local
             - name: CLICKHOUSE_HTTP_PORT
@@ -1885,6 +1903,8 @@ spec:
             - name: http
               containerPort: 8013
           env:
+            - name: CASCADE_BIND_HOST
+              value: "0.0.0.0"
             - name: CLICKHOUSE_HOST
               value: clickhouse.cascade-system.svc.cluster.local
             - name: CLICKHOUSE_HTTP_PORT
@@ -1960,6 +1980,8 @@ spec:
             - name: http
               containerPort: 8014
           env:
+            - name: CASCADE_BIND_HOST
+              value: "0.0.0.0"
             - name: CLICKHOUSE_HOST
               value: clickhouse.cascade-system.svc.cluster.local
             - name: CLICKHOUSE_HTTP_PORT
@@ -2041,6 +2063,8 @@ spec:
             - name: http
               containerPort: 8015
           env:
+            - name: CASCADE_BIND_HOST
+              value: "0.0.0.0"
             - name: CLICKHOUSE_HOST
               value: clickhouse.cascade-system.svc.cluster.local
             - name: CLICKHOUSE_HTTP_PORT
@@ -2123,6 +2147,8 @@ spec:
             - name: http
               containerPort: 8016
           env:
+            - name: CASCADE_BIND_HOST
+              value: "0.0.0.0"
             - name: CLICKHOUSE_HOST
               value: clickhouse.cascade-system.svc.cluster.local
             - name: CLICKHOUSE_HTTP_PORT
@@ -2197,6 +2223,8 @@ spec:
             - name: http
               containerPort: 8017
           env:
+            - name: CASCADE_BIND_HOST
+              value: "0.0.0.0"
             - name: RETRIEVAL_SERVICE_URL
               value: http://retrieval-service.cascade-system.svc.cluster.local:8012
             - name: KNOWLEDGE_RETRIEVAL_SERVICE_URL
@@ -2277,6 +2305,8 @@ spec:
             - name: http
               containerPort: 8018
           env:
+            - name: CASCADE_BIND_HOST
+              value: "0.0.0.0"
             - name: CLICKHOUSE_HOST
               value: clickhouse.cascade-system.svc.cluster.local
             - name: CLICKHOUSE_HTTP_PORT
@@ -2355,6 +2385,8 @@ spec:
             - name: http
               containerPort: 8019
           env:
+            - name: CASCADE_BIND_HOST
+              value: "0.0.0.0"
             - name: CLICKHOUSE_HOST
               value: clickhouse.cascade-system.svc.cluster.local
             - name: CLICKHOUSE_HTTP_PORT
@@ -2500,6 +2532,8 @@ spec:
             - name: http
               containerPort: 8020
           env:
+            - name: CASCADE_BIND_HOST
+              value: "0.0.0.0"
             - name: CLICKHOUSE_HOST
               value: clickhouse.cascade-system.svc.cluster.local
             - name: CLICKHOUSE_HTTP_PORT
@@ -2606,6 +2640,8 @@ spec:
             - name: http
               containerPort: 8021
           env:
+            - name: CASCADE_BIND_HOST
+              value: "0.0.0.0"
             - name: CLICKHOUSE_HOST
               value: clickhouse.cascade-system.svc.cluster.local
             - name: CLICKHOUSE_HTTP_PORT
@@ -2684,6 +2720,8 @@ spec:
             - name: http
               containerPort: 8022
           env:
+            - name: CASCADE_BIND_HOST
+              value: "0.0.0.0"
             - name: CLICKHOUSE_HOST
               value: clickhouse.cascade-system.svc.cluster.local
             - name: CLICKHOUSE_HTTP_PORT
@@ -2807,6 +2845,8 @@ spec:
             - name: http
               containerPort: 8023
           env:
+            - name: CASCADE_BIND_HOST
+              value: "0.0.0.0"
             - name: CLICKHOUSE_HOST
               value: clickhouse.cascade-system.svc.cluster.local
             - name: CLICKHOUSE_HTTP_PORT
@@ -2907,6 +2947,8 @@ spec:
             - name: http
               containerPort: 8024
           env:
+            - name: CASCADE_BIND_HOST
+              value: "0.0.0.0"
             - name: CLICKHOUSE_HOST
               value: clickhouse.cascade-system.svc.cluster.local
             - name: CLICKHOUSE_HTTP_PORT
@@ -3003,6 +3045,8 @@ spec:
             - name: http
               containerPort: 8025
           env:
+            - name: CASCADE_BIND_HOST
+              value: "0.0.0.0"
             - name: CLICKHOUSE_HOST
               value: clickhouse.cascade-system.svc.cluster.local
             - name: CLICKHOUSE_HTTP_PORT
@@ -3083,6 +3127,9 @@ spec:
     spec:
       containers:
         - name: project-qa-service
+          env:
+            - name: CASCADE_BIND_HOST
+              value: "0.0.0.0"
           image: cascade-project-qa-service:dev
           imagePullPolicy: Never
           ports:
@@ -3142,6 +3189,9 @@ spec:
     spec:
       containers:
         - name: evals-service
+          env:
+            - name: CASCADE_BIND_HOST
+              value: "0.0.0.0"
           image: cascade-evals-service:dev
           imagePullPolicy: Never
           ports:
@@ -3207,6 +3257,8 @@ spec:
             - name: http
               containerPort: 8031
           env:
+            - name: CASCADE_BIND_HOST
+              value: "0.0.0.0"
             - name: RETRIEVAL_SERVICE_URL
               value: http://retrieval-service.cascade-system.svc.cluster.local:8012
             - name: KNOWLEDGE_RETRIEVAL_SERVICE_URL

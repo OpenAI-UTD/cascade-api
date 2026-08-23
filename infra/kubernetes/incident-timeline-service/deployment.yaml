@@ -23,6 +23,8 @@ spec:
             - name: http
               containerPort: 8006
           env:
+            - name: CASCADE_BIND_HOST
+              value: "0.0.0.0"
             - name: WEB_CONCURRENCY
               value: "1"
           resources:

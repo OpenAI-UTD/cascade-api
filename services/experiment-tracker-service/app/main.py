@@ -8,10 +8,13 @@ from fastapi import FastAPI, HTTPException, status
 from app.kafka_publisher import ExperimentPublisher
 from app.models import ExperimentCreate, ExperimentRecord, HealthResponse, Settings
 from app.store import ExperimentStore
+from services.shared.security.auth import binding_guard
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
 
 settings = Settings()
+
+binding_guard(settings)
 store = ExperimentStore()
 publisher = ExperimentPublisher(settings)
 

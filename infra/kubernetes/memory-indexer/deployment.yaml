@@ -23,6 +23,8 @@ spec:
             - name: http
               containerPort: 8011
           env:
+            - name: CASCADE_BIND_HOST
+              value: "0.0.0.0"
             - name: KAFKA_BOOTSTRAP_SERVERS
               value: redpanda.cascade-system.svc.cluster.local:9092
             - name: TELEMETRY_ENRICHED_TOPIC

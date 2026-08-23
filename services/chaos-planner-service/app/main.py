@@ -4,6 +4,7 @@ import json
 import logging
 import uuid
 import asyncio
+from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from typing import Any
 
@@ -15,7 +16,7 @@ from services.shared.audit import build_audit_event, emit_audit_event
 from services.shared.chaos.safety import default_policy, validate_plan
 from services.shared.chaos.schemas import ChaosCampaignRequest, ChaosCampaignStartRequest, ChaosCampaignStatus, ChaosPlanRequest
 from services.shared.chaos.templates import build_manifest
-from services.shared.security.auth import AuthSettings, auth_status, require_auth
+from services.shared.security.auth import AuthSettings, auth_status, binding_guard, require_auth
 from services.shared.storage.clickhouse_client import ClickHouseClient
 from services.shared.targets.catalog import ACTIVE_NAMESPACE, ACTIVE_SAFE_CHAOS_SERVICES
 
@@ -38,13 +39,18 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
+binding_guard(settings)
 clickhouse = ClickHouseClient()
-app = FastAPI(title="Cascade Chaos Planner Service", version="0.1.0")
 
 
-@app.on_event("startup")
-async def startup() -> None:
+@asynccontextmanager
+async def lifespan(_: FastAPI):
     await clickhouse.initialize_schema()
+    yield
+
+
+app = FastAPI(title="Cascade Chaos Planner Service", version="0.1.0", lifespan=lifespan)
 
 
 @app.get("/health")

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from services.shared.qa.affiliation import affiliation_findings
-from services.shared.qa.schemas import DocumentationInput, SourceFile
+from services.shared.qa.schemas import SourceFile
 
 
 def test_forbidden_openai_identity() -> None:

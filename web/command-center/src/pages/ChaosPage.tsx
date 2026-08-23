@@ -1,8 +1,9 @@
 import { FormEvent, useState } from "react";
 import { apiGet, apiPost } from "../api/client";
 import { useChaosCampaignRuns, useChaosCampaigns, useChaosPlans, useChaosPolicy, useChaosRuns, useControlChaosCampaign, useCreateChaosCampaign, useCreateChaosPlan, useDryRunChaos, useLiveDemoStatus, useResilienceScores, useStartChaosCampaign } from "../api/hooks";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, FlaskConical, Radar } from "lucide-react";
 import { Badge } from "../components/Badge";
+import { EmptyState } from "../components/EmptyState";
 import { SafetyFindingsPanel, TargetWorkloadPanel } from "../components/IntelligencePanels";
 import { JsonBlock } from "../components/JsonBlock";
 import { StatusPanel } from "../components/cards/StatusPanel";
@@ -160,7 +161,7 @@ export function ChaosPage() {
         </StatusPanel>
       </div>
       <StatusPanel title="Chaos Plans" loading={plans.isLoading} error={plans.error}>
-        <DataTable caption="Chaos plans" rows={plans.data?.plans ?? []} empty="No data returned." columns={[{ key: "created_at", label: "Created", width: "140px" }, { key: "target_service", label: "Service", width: "140px" }, { key: "experiment_kind", label: "Kind", width: "120px" }, { key: "blast_radius_score", label: "Blast", width: "90px", render: (row) => formatPercent(row.blast_radius_score) }, { key: "risk_level", label: "Risk", width: "100px", render: (row) => <Badge tone={riskTone(row.risk_level)}>{String(row.risk_level ?? "-")}</Badge> }, { key: "safety_findings", label: "Safety findings", render: (row) => formatList(row.safety_findings) }, { key: "dryrun", label: "Dry-run", width: "120px", align: "right", render: (row) => <button type="button" className="btn-dry compact" disabled={dryRun.isPending} onClick={() => dryRun.mutate({ plan_id: row.plan_id ?? "", observation_window_seconds: 10, trigger_agent_investigation: false })}>Dry-run -&gt;</button> }]} />
+        <DataTable caption="Chaos plans" rows={plans.data?.plans ?? []} empty={<EmptyState icon={<FlaskConical size={22} />} title="No chaos plans yet" hint="Create a dry-run plan above — plans are scored for blast radius and safety before anything runs." />} columns={[{ key: "created_at", label: "Created", width: "140px" }, { key: "target_service", label: "Service", width: "140px" }, { key: "experiment_kind", label: "Kind", width: "120px" }, { key: "blast_radius_score", label: "Blast", width: "90px", render: (row) => formatPercent(row.blast_radius_score) }, { key: "risk_level", label: "Risk", width: "100px", render: (row) => <Badge tone={riskTone(row.risk_level)}>{String(row.risk_level ?? "-")}</Badge> }, { key: "safety_findings", label: "Safety findings", render: (row) => formatList(row.safety_findings) }, { key: "dryrun", label: "Dry-run", width: "120px", align: "right", render: (row) => <button type="button" className="btn-dry compact" disabled={dryRun.isPending} onClick={() => dryRun.mutate({ plan_id: row.plan_id ?? "", observation_window_seconds: 10, trigger_agent_investigation: false })}>Dry-run -&gt;</button> }]} />
       </StatusPanel>
       <StatusPanel title="Chaos Campaigns" loading={campaigns.isLoading} error={campaigns.error}>
         <DataTable caption="Chaos campaigns" rows={campaigns.data?.campaigns ?? []} empty="No campaigns returned." columns={[
@@ -188,7 +189,7 @@ export function ChaosPage() {
         {startCampaign.data ? <JsonBlock value={startCampaign.data.report} /> : null}
       </StatusPanel>
       <StatusPanel title="Chaos Runs" loading={runs.isLoading} error={runs.error}>
-        <DataTable caption="Chaos runs" rows={runs.data?.runs ?? []} empty="No data returned." columns={[{ key: "started_at", label: "Started" }, { key: "target_service", label: "Service" }, { key: "experiment_kind", label: "Kind" }, { key: "dry_run", label: "Dry-run" }, { key: "cleanup_status", label: "Cleanup" }, { key: "status", label: "Status", render: (row) => <Badge tone={statusTone(row.status)}>{String(row.status ?? "-")}</Badge> }]} />
+        <DataTable caption="Chaos runs" rows={runs.data?.runs ?? []} empty={<EmptyState icon={<Radar size={22} />} title="No chaos runs yet" hint="Dry-run a plan above to record the first experiment. Real execution stays disabled unless live demo mode is enabled." />} columns={[{ key: "started_at", label: "Started" }, { key: "target_service", label: "Service" }, { key: "experiment_kind", label: "Kind" }, { key: "dry_run", label: "Dry-run" }, { key: "cleanup_status", label: "Cleanup" }, { key: "status", label: "Status", render: (row) => <Badge tone={statusTone(row.status)}>{String(row.status ?? "-")}</Badge> }]} />
       </StatusPanel>
       {liveResult ? <StatusPanel title="Latest Live Demo Result"><JsonBlock value={liveResult} /></StatusPanel> : null}
     </div>

@@ -20,6 +20,7 @@ from services.shared.features.extraction import ch_datetime
 from services.shared.kafka.config import KafkaSettings
 from services.shared.kafka.producer import KafkaProducer
 from services.shared.storage.clickhouse_client import ClickHouseClient
+from services.shared.security.auth import binding_guard
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
 logger = logging.getLogger(__name__)
@@ -48,6 +49,8 @@ class DetectRequest(BaseModel):
 
 
 settings = Settings()
+
+binding_guard(settings)
 clickhouse = ClickHouseClient()
 producer = KafkaProducer(KafkaSettings(kafka_bootstrap_servers=settings.kafka_bootstrap_servers, kafka_client_id="anomaly-detector-service"))
 last_detection: dict[str, Any] = {"windows_scored": 0, "anomalies_detected": 0, "published_count": 0, "last_error": ""}

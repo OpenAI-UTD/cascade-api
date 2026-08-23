@@ -49,6 +49,15 @@ Sensitive write routes require auth when `CASCADE_AUTH_ENABLED=true`, including:
 
 Health, readiness, and read-only dashboard queries remain available for local diagnostics.
 
+## Binding Guard
+
+Every FastAPI service main calls the shared `binding_guard` helper (`services/shared/security/auth.py`) at startup. It compares the effective bind host (explicit argument, then `CASCADE_BIND_HOST`, then `127.0.0.1`) against loopback addresses:
+
+- non-local bind + auth disabled: always logs a CRITICAL warning.
+- same condition with `CASCADE_STRICT_AUTH=true`: refuses boot with `RuntimeError`.
+
+Kubernetes manifests set `CASCADE_BIND_HOST=0.0.0.0` so the guard reflects real in-cluster exposure; operators can flip `CASCADE_STRICT_AUTH=true` per namespace to fail closed until API-key auth is configured.
+
 ## Command Center Token
 
 The Command Center frontend sends a bearer token when either is configured:

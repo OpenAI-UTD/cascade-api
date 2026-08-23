@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+from contextlib import asynccontextmanager
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
@@ -12,7 +13,7 @@ from pydantic import BaseModel, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from services.shared.audit import build_audit_event, emit_audit_event
-from services.shared.security.auth import AuthSettings, auth_status, require_auth
+from services.shared.security.auth import AuthSettings, auth_status, binding_guard, require_auth
 from services.shared.scheduler import (
     ScheduledItem,
     SchedulerDecision,
@@ -66,28 +67,31 @@ class ControlRequest(BaseModel):
 
 
 settings = Settings()
+
+binding_guard(settings)
 store = ClickHouseClient()
-app = FastAPI(title="Cascade Scheduler Service", version="0.1.0")
 _worker_task: asyncio.Task[None] | None = None
 _tick_lock = asyncio.Lock()
 
 
-@app.on_event("startup")
-async def startup() -> None:
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    global _worker_task
     await store.initialize_schema()
     if settings.scheduler_enabled:
-        global _worker_task
         _worker_task = asyncio.create_task(_poll_forever())
+    try:
+        yield
+    finally:
+        if _worker_task:
+            _worker_task.cancel()
+            try:
+                await _worker_task
+            except asyncio.CancelledError:
+                pass
 
 
-@app.on_event("shutdown")
-async def shutdown() -> None:
-    if _worker_task:
-        _worker_task.cancel()
-        try:
-            await _worker_task
-        except asyncio.CancelledError:
-            pass
+app = FastAPI(title="Cascade Scheduler Service", version="0.1.0", lifespan=lifespan)
 
 
 @app.get("/health")

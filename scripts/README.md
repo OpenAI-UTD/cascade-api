@@ -9,6 +9,11 @@ Use these scripts from the repository root unless a script says otherwise.
 
 | Script | Purpose |
 |---|---|
+| `deploy.sh` | Bash mirror of `deploy.ps1` (Command Center UI stack to local kind) |
+| `restart-wait.sh` | Bash mirror of the rollout restart-and-wait flow |
+| `endpoints.sh` | Read-only ready-endpoints check (bash mirror of `Test-EndpointReady`) |
+| `port-forward-smoke.sh` | Port-forward health smoke checks (bash mirror of deploy.ps1 smoke section) |
+| `invoke-evals-run.sh` | Bash mirror of `invoke-evals-run.ps1` |
 | `deploy.ps1` | Deploy all Cascade services to local kind |
 | `accept.ps1` | Run end-to-end acceptance validation |
 | `demo-final.ps1` | Final safe end-to-end product wiring and demo verification |

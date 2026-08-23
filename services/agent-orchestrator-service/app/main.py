@@ -5,6 +5,7 @@ import json
 import logging
 import time
 import uuid
+from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from typing import Any
 
@@ -18,6 +19,7 @@ from services.shared.agents.tool_client import ToolGatewayClient
 from services.shared.kafka.config import KafkaSettings
 from services.shared.kafka.producer import KafkaProducer
 from services.shared.storage.clickhouse_client import ClickHouseClient
+from services.shared.security.auth import binding_guard
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
 logger = logging.getLogger(__name__)
@@ -38,23 +40,26 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
+binding_guard(settings)
 clickhouse = ClickHouseClient()
 gateway = ToolGatewayClient(settings.agent_tool_gateway_url, settings.tool_timeout_seconds)
 producer = KafkaProducer(KafkaSettings(kafka_bootstrap_servers=settings.kafka_bootstrap_servers, kafka_client_id="agent-orchestrator-service"))
-app = FastAPI(title="Cascade Agent Orchestrator Service", version="0.1.0")
 
 
-@app.on_event("startup")
-async def startup() -> None:
+@asynccontextmanager
+async def lifespan(_: FastAPI):
     await clickhouse.initialize_schema()
     if settings.agent_publish_events:
         await producer.start()
+    try:
+        yield
+    finally:
+        if settings.agent_publish_events:
+            await producer.stop()
 
 
-@app.on_event("shutdown")
-async def shutdown() -> None:
-    if settings.agent_publish_events:
-        await producer.stop()
+app = FastAPI(title="Cascade Agent Orchestrator Service", version="0.1.0", lifespan=lifespan)
 
 
 @app.get("/health")

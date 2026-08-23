@@ -51,7 +51,7 @@ kubectl get svc -n cascade-targets
 kubectl port-forward -n cascade-targets svc/front-end 18099:80
 ```
 
-Open `http://localhost:18099`. Sock Shop is the canonical observed demo workload for Cascade. The historical Online Boutique source tree remains under `targets/online-boutique-src/`, but it is inactive and should not be used for current demos.
+Open `http://localhost:18099`. Sock Shop is the canonical observed demo workload for Cascade. The historical Online Boutique source tree placeholder remains under `targets/online-boutique-src/` (fetch instructions in its README), but it is inactive and should not be used for current demos.
 
 Common service forwards:
 
@@ -70,6 +70,20 @@ Collect a support bundle:
 ```
 
 Phase-specific scripts remain available, including `debug.ps1` for Command Center resources and proxy checks.
+
+## Health Probes Audit
+
+Every Cascade service deployment under `infra/kubernetes/*/deployment.yaml` declares both probes with `httpGet` against a named container port:
+
+- `readinessProbe` -> `GET /ready`
+- `livenessProbe` -> `GET /health`
+
+The single exception is `redpanda`: its Kafka port is not HTTP-addressable, so it uses `tcpSocket` probes with a generous `startupProbe` instead.
+
+The checks are enforced offline by two gates:
+
+- `python scripts/validate-k8s-manifests.py` parses every manifest YAML and fails on missing or malformed probes (CI job `k8s-manifest-validate`).
+- `tests/test_k8s_probe_health.py` asserts the same contract, including that probe ports resolve to declared container ports.
 
 ## Backups
 

@@ -17,6 +17,9 @@ spec:
     spec:
       containers:
         - name: project-qa-service
+          env:
+            - name: CASCADE_BIND_HOST
+              value: "0.0.0.0"
           image: cascade-project-qa-service:dev
           imagePullPolicy: Never
           ports:

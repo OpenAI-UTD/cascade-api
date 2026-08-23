@@ -12,6 +12,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from services.shared.agents.safety import ensure_read_only_tool, redact_sensitive
 from services.shared.agents.schemas import ToolResponse
 from services.shared.agents.tool_contracts import TOOL_REGISTRY, ToolContract
+from services.shared.security.auth import binding_guard
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
 logger = logging.getLogger(__name__)
@@ -34,6 +35,8 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
+binding_guard(settings)
 app = FastAPI(title="Cascade Agent Tool Gateway", version="0.1.0")
 
 

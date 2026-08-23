@@ -16,7 +16,7 @@ export function DataTable<T extends object>({
 }: {
   rows: T[];
   columns: Column<T>[];
-  empty?: string;
+  empty?: React.ReactNode;
   caption?: string;
   getRowClassName?: (row: T) => string;
   onRowClick?: (row: T) => void;
@@ -55,8 +55,14 @@ export function DataTable<T extends object>({
           ) : (
             <tr>
               <td className="empty-cell" colSpan={columns.length}>
-                <span className="empty-icon" aria-hidden="true">[]</span>
-                {empty}
+                {typeof empty === "string" ? (
+                  <>
+                    <span className="empty-icon" aria-hidden="true">[]</span>
+                    {empty}
+                  </>
+                ) : (
+                  empty
+                )}
               </td>
             </tr>
           )}

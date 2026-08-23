@@ -12,7 +12,7 @@ from fastapi.responses import JSONResponse
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from services.shared.contracts import EVENT_TOPIC_CONTRACTS, contract_schema_bundle
-from services.shared.security.auth import AuthSettings, auth_status, require_auth
+from services.shared.security.auth import AuthSettings, auth_status, binding_guard, require_auth
 
 logger = logging.getLogger("command-center-api")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
@@ -52,6 +52,8 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
+binding_guard(settings)
 app = FastAPI(title="Cascade Command Center API", version="0.1.0")
 
 

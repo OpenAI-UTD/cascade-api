@@ -2,6 +2,7 @@ import { FormEvent, useRef, useState } from "react";
 import { Bot, ShieldCheck } from "lucide-react";
 import { useAutopilotMode, useAutopilotRun, useAutopilotRuns, useCreateAutopilotRun } from "../api/hooks";
 import { Badge } from "../components/Badge";
+import { EmptyState } from "../components/EmptyState";
 import { JsonBlock } from "../components/JsonBlock";
 import { StatusPanel } from "../components/cards/StatusPanel";
 import { DataTable } from "../components/tables/DataTable";
@@ -106,7 +107,7 @@ export function AutopilotPage() {
         <DataTable
           caption="Recent Autopilot runs"
           rows={runs.data?.runs ?? []}
-          empty="No Autopilot runs returned."
+          empty={<EmptyState icon={<Bot size={20} />} title="No Autopilot runs yet" hint="Start a run with the form above — Autopilot investigates an anomaly or service, proposes a policy-gated plan, and records each step." />}
           getRowClassName={(row) => String(row.run_id ?? "") === selected ? "row-selected" : ""}
           onRowClick={(row) => setSelected(String(row.run_id ?? ""))}
           columns={[

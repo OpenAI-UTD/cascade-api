@@ -1,6 +1,7 @@
-import { FlaskConical, ShieldAlert } from "lucide-react";
+import { FlaskConical, ShieldAlert, ShieldCheck } from "lucide-react";
 import { useEvalFixtures, useQaProjects, useProjectEvaluations } from "../api/hooks";
 import { Badge } from "../components/Badge";
+import { EmptyState } from "../components/EmptyState";
 import { DataTable } from "../components/tables/DataTable";
 import { StatusPanel } from "../components/cards/StatusPanel";
 
@@ -73,7 +74,13 @@ export function EvalsPage() {
           <DataTable
             caption="Eval-related findings"
             rows={evalRows}
-            empty="No eval regressions recorded yet. Submit eval checks from CI or run `python scripts/cascade_cli.py eval . --in-process-qa`."
+            empty={(
+              <EmptyState
+                icon={<ShieldCheck size={22} />}
+                title="No eval regressions recorded yet"
+                hint="Submit eval checks from CI or run `python scripts/cascade_cli.py eval . --in-process-qa` to see affiliation and agent-authz findings here."
+              />
+            )}
             columns={[
               { key: "created_at", label: "When", width: "180px", render: (row) => shortTime(row.created_at) },
               { key: "category", label: "Category", width: "120px" },

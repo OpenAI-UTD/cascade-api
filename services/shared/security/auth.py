@@ -2,10 +2,85 @@ from __future__ import annotations
 
 import hashlib
 import hmac
+import logging
+import os
 from dataclasses import dataclass
 from typing import Any
 
 from fastapi import HTTPException, Request, status
+
+
+LOCAL_BINDING_HOSTS = frozenset({"localhost", "127.0.0.1", "::1", "[::1]"})
+BIND_HOST_ENV = "CASCADE_BIND_HOST"
+STRICT_AUTH_ENV = "CASCADE_STRICT_AUTH"
+
+logger = logging.getLogger(__name__)
+
+
+@dataclass(frozen=True)
+class BindingGuardReport:
+    host: str
+    auth_enabled: bool
+    local_binding: bool
+    strict_auth: bool
+    exposed_unauthenticated: bool
+    refused: bool
+
+
+def binding_guard(
+    settings: Any = None,
+    *,
+    host: str | None = None,
+    auth_enabled: bool | None = None,
+    logger: logging.Logger | None = None,
+) -> BindingGuardReport:
+    """Guard against unauthenticated services bound beyond loopback.
+
+    Resolves the effective bind host from ``host``, then the ``CASCADE_BIND_HOST``
+    environment variable, then ``127.0.0.1``. Auth state comes from ``auth_enabled``
+    or ``settings.enabled`` / ``settings.cascade_auth_enabled`` when present.
+    A non-local bind with auth disabled always emits a CRITICAL log; when
+    ``CASCADE_STRICT_AUTH`` is truthy it also raises ``RuntimeError`` to refuse boot.
+    """
+    resolved_host = (host if host is not None else os.environ.get(BIND_HOST_ENV, "")) or "127.0.0.1"
+    effective_logger = logger or logging.getLogger("cascade.security.binding")
+
+    if auth_enabled is None:
+        explicit_enabled = getattr(settings, "enabled", None)
+        if explicit_enabled is not None:
+            auth_enabled = bool(explicit_enabled)
+        else:
+            auth_enabled = bool(getattr(settings, "cascade_auth_enabled", False))
+
+    normalized_host = resolved_host.strip().lower()
+    local_binding = normalized_host in LOCAL_BINDING_HOSTS
+    strict_auth = os.environ.get(STRICT_AUTH_ENV, "").strip().lower() in {"1", "true", "yes", "on"}
+    exposed_unauthenticated = not local_binding and not auth_enabled
+    refused = False
+
+    if exposed_unauthenticated:
+        effective_logger.critical(
+            "CRITICAL: service binds to non-local host %r with authentication disabled "
+            "(%s=false). Set %s=true to refuse boot, or enable API-key auth.",
+            resolved_host,
+            STRICT_AUTH_ENV,
+            STRICT_AUTH_ENV,
+        )
+        if strict_auth:
+            refused = True
+            raise RuntimeError(
+                f"Refusing to start: bound to non-local host {resolved_host!r} with auth disabled "
+                f"while {STRICT_AUTH_ENV} is enabled."
+            )
+
+    return BindingGuardReport(
+        host=resolved_host,
+        auth_enabled=auth_enabled,
+        local_binding=local_binding,
+        strict_auth=strict_auth,
+        exposed_unauthenticated=exposed_unauthenticated,
+        refused=refused,
+    )
 
 
 @dataclass(frozen=True)

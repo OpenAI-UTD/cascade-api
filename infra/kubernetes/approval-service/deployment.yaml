@@ -23,6 +23,8 @@ spec:
             - name: http
               containerPort: 8022
           env:
+            - name: CASCADE_BIND_HOST
+              value: "0.0.0.0"
             - name: CLICKHOUSE_HOST
               value: clickhouse.cascade-system.svc.cluster.local
             - name: CLICKHOUSE_HTTP_PORT

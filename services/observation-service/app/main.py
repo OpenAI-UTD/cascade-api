@@ -16,6 +16,7 @@ from app.normalizer import build_snapshot_queries, normalize_snapshot
 from app.prometheus_client import PrometheusClient
 from services.shared.kafka.config import KafkaSettings
 from services.shared.kafka.producer import KafkaProducer
+from services.shared.security.auth import binding_guard
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
 logger = logging.getLogger(__name__)
@@ -43,6 +44,8 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Cascade Observation Service", version="0.2.0", lifespan=lifespan)
+
+binding_guard()
 
 
 def get_prometheus_client(settings: Settings = Depends(get_settings)) -> PrometheusClient:

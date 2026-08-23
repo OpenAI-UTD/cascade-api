@@ -11,6 +11,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from services.shared.features.extraction import extract_feature_windows, synthetic_feature_window, telemetry_query
 from services.shared.storage.clickhouse_client import ClickHouseClient
+from services.shared.security.auth import binding_guard
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
 logger = logging.getLogger(__name__)
@@ -34,6 +35,8 @@ class ExtractRequest(BaseModel):
 
 
 settings = Settings()
+
+binding_guard(settings)
 clickhouse = ClickHouseClient()
 last_extract: dict[str, Any] = {"windows_created": 0, "services_seen": 0, "last_error": ""}
 

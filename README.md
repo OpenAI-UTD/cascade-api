@@ -503,6 +503,20 @@ Deployment:
 .\scripts\deploy.ps1
 ```
 
+### Non-Windows ops path (bash mirrors)
+
+The top five operator flows have bash equivalents under `scripts/`. The `.ps1` originals remain canonical for Windows and are untouched.
+
+| Flow | PowerShell | Bash mirror | Notes |
+|---|---|---|---|
+| Deploy Command Center UI stack | `scripts/deploy.ps1` | `scripts/deploy.sh --cluster-name cascade --namespace cascade-system [--skip-remediation-deploy] [--skip-npm-install]` | Builds images, loads into kind, applies manifests, restarts, waits for rollouts/endpoints, port-forward smoke |
+| Restart deployments and wait | restart/wait sections of `deploy*.ps1` | `scripts/restart-wait.sh [-n NS] [--timeout 240s] [DEPLOYMENT...]` | Defaults to the Command Center UI set when no names given |
+| Check service endpoints | `Test-EndpointReady` in `accept*.ps1` | `scripts/endpoints.sh [-n NS] [SERVICE...]` | Read-only EndpointSlice readiness check |
+| Port-forward health smoke | smoke sections of `deploy.ps1` | `scripts/port-forward-smoke.sh [-n NS]` | Read-only GETs against forwarded services |
+| Submit an eval run | `scripts/invoke-evals-run.ps1` | `scripts/invoke-evals-run.sh -PayloadPath FILE [--api-url URL] [--api-key KEY] [--wait] [--result-path FILE]` | Same flags/env fallbacks as the PowerShell script |
+
+For flows without a dedicated mirror, either install PowerShell (`brew install pwsh` on macOS/Linux) and run the `.ps1` scripts directly, or use plain `kubectl` as shown in `docs/operations/runbook.md`.
+
 Acceptance:
 
 ```powershell
@@ -556,7 +570,7 @@ infra/kubernetes/             Kubernetes manifests
 scripts/                      Deployment, acceptance, debug, backup, and CI helpers
 services/                     FastAPI platform services
 targets/sock-shop/            Canonical demo target workload
-targets/online-boutique-src/  Inactive legacy/vendor snapshot
+targets/online-boutique-src/  Empty legacy target placeholder (fetch via its README)
 tests/                        Python unit and integration-oriented tests
 web/command-center/           Command Center frontend
 ```

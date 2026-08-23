@@ -4,6 +4,7 @@ import logging
 import json
 import time
 import uuid
+from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from typing import Any
 
@@ -20,6 +21,7 @@ from services.shared.knowledge.search import KnowledgeSearchRequest
 from services.shared.rca import build_rca_report
 from services.shared.storage.clickhouse_client import ClickHouseClient
 from services.shared.storage.qdrant_client import QdrantClient, QdrantSettings
+from services.shared.security.auth import binding_guard
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
 logger = logging.getLogger(__name__)
@@ -57,18 +59,22 @@ class ReportIngestRequest(BaseModel):
 
 
 settings = Settings()
+
+binding_guard(settings)
 clickhouse = ClickHouseClient()
 qdrant = QdrantClient(QdrantSettings(embedding_dimensions=settings.embedding_dimensions))
 knowledge_qdrant = QdrantClient(QdrantSettings(embedding_dimensions=settings.embedding_dimensions, qdrant_knowledge_collection=settings.qdrant_knowledge_collection))
 
-app = FastAPI(title="Cascade Retrieval Service", version="0.1.0")
 
-
-@app.on_event("startup")
-async def startup() -> None:
+@asynccontextmanager
+async def lifespan(_: FastAPI):
     await clickhouse.initialize_schema()
     await qdrant.ensure_collection()
     await knowledge_qdrant.ensure_knowledge_collection()
+    yield
+
+
+app = FastAPI(title="Cascade Retrieval Service", version="0.1.0", lifespan=lifespan)
 
 
 @app.get("/health")

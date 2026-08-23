@@ -33,6 +33,45 @@ SPEC_REQUIRED_KINDS = {
 
 CRD_TEMPLATE_PREFIX = ("infra", "kubernetes", "chaos-templates")
 
+# Infra workloads whose health cannot be checked over HTTP use tcp-socket
+# probes instead; everything else must expose httpGet liveness/readiness.
+TCP_SOCKET_PROBE_ONLY = {"redpanda"}
+
+
+def _validate_deployment_probes(path: Path, index: int, doc: dict) -> list[str]:
+    failures: list[str] = []
+    name = doc.get("metadata", {}).get("name") if isinstance(doc.get("metadata"), dict) else None
+    containers = (
+        doc.get("spec", {})
+        .get("template", {})
+        .get("spec", {})
+        .get("containers", [])
+    )
+    for position, container in enumerate(containers):
+        container_name = container.get("name") or f"container-{position}"
+        for probe_name in ("livenessProbe", "readinessProbe"):
+            probe = container.get(probe_name)
+            label = f"{path} document {index}: {name}/{container_name} {probe_name}"
+            if probe is None:
+                failures.append(f"{label}: missing probe")
+                continue
+            if "httpGet" in probe:
+                http_get = probe["httpGet"]
+                if not isinstance(http_get, dict):
+                    failures.append(f"{label}: httpGet must be a mapping")
+                    continue
+                for field in ("path", "port"):
+                    if field not in http_get:
+                        failures.append(f"{label}: httpGet missing {field}")
+                continue
+            if "tcpSocket" in probe and name in TCP_SOCKET_PROBE_ONLY:
+                continue
+            failures.append(
+                f"{label}: expected httpGet health path/port"
+                + (" (tcp-socket exempt list applies)" if "tcpSocket" in probe else "")
+            )
+    return failures
+
 
 def validate_doc(path: Path, index: int, doc: object) -> list[str]:
     failures: list[str] = []
@@ -66,6 +105,8 @@ def validate_doc(path: Path, index: int, doc: object) -> list[str]:
         failures.append(f"{path} document {index}: unexpected kind {kind!r}")
     if kind == "NetworkPolicy" and api_version != "networking.k8s.io/v1":
         failures.append(f"{path} document {index}: unexpected NetworkPolicy apiVersion {api_version!r}")
+    if kind == "Deployment" and path.parts[:3] != CRD_TEMPLATE_PREFIX and "sock-shop" not in path.parts:
+        failures.extend(_validate_deployment_probes(path, index, doc))
 
     return failures
 
