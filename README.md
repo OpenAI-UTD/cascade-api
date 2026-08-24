@@ -26,6 +26,8 @@ The `dev` branch starts this transition with a standalone Project QA API that do
 
 These remain for the SRE parallel-upgrade plan ([docs/operations/parallel-upgrade-plan.md](docs/operations/parallel-upgrade-plan.md)) and the kind-based demo. They are not deployed for OpenAI-UTD club operations and are not gated on club repo `main`. If you are contributing club QA work, start in `project-qa-service`, `repo-qa-runner`, `evals-service`, or `shared/qa`.
 
+Both paths are still covered by the test suite under `tests/` — club-active services by `tests/test_project_qa_*.py`, `tests/test_repo_qa_runner.py`, `tests/test_evals_service.py`, `tests/test_affiliation_lint.py`; legacy SRE services by `tests/test_*_core.py` (anomaly, autopilot, causality, chaos, remediation, topology, etc.). The legacy tests are kept so refactors of `services/shared/` don't silently break the SRE demo.
+
 ## Club QA (C0–C3)
 
 Production-oriented Project QA upgrades for the OpenAI Club at UT Dallas:
